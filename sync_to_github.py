@@ -168,13 +168,28 @@ def upload_apk(tag: str, apk_name: str):
 
     upload_url = (f"https://uploads.github.com/repos/{OWNER}/{REPO}/releases/"
                   f"{rel['id']}/assets?name={apk_name}")
-    req = urllib.request.Request(upload_url, data=local_bytes, method="POST")
-    req.add_header("Authorization", f"Bearer {TOKEN}")
-    req.add_header("Accept", "application/vnd.github+json")
-    req.add_header("Content-Type", "application/vnd.android.package-archive")
-    req.add_header("User-Agent", "countdown-sync")
-    with urllib.request.urlopen(req, timeout=600) as r:
-        res = json.loads(r.read().decode("utf-8"))
+    res = None
+    last_err = None
+    for attempt in range(1, 13):
+        req = urllib.request.Request(upload_url, data=local_bytes, method="POST")
+        req.add_header("Authorization", f"Bearer {TOKEN}")
+        req.add_header("Accept", "application/vnd.github+json")
+        req.add_header("Content-Type", "application/vnd.android.package-archive")
+        req.add_header("User-Agent", "countdown-sync")
+        try:
+            with urllib.request.urlopen(req, timeout=600) as r:
+                res = json.loads(r.read().decode("utf-8"))
+            break
+        except (urllib.error.URLError, ssl.SSLError, http.client.IncompleteRead,
+                http.client.HTTPException, ConnectionError, OSError) as e:
+            # uploads.github.com 走代理偶发 TLS 重置 / 读响应中断，退避重试
+            last_err = e
+            print(f"  [retry {attempt}/12] APK 上传 TLS/网络抖动: {e}")
+            time.sleep(3 * attempt)
+    if res is None:
+        if last_err:
+            raise last_err
+        raise RuntimeError("APK 上传失败：无响应")
     print(f"  本地 APK sha256: {local_sha[:16]}...")
     print(f"  [OK] 已上传 {res['name']}（{res['size']} 字节）")
     print(f"       {res.get('browser_download_url')}")
