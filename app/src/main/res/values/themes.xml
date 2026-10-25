@@ -1,14 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- 液态玻璃：深色渐变底 + 模糊光斑背景层，界面元素统一为半透明玻璃卡片。 -->
     <style name="AppTheme" parent="android:Theme.Material.NoActionBar">
-        <item name="android:colorBackground">#0B1020</item>
+        <item name="android:colorBackground">@color/neu_base</item>
         <item name="android:windowBackground">@drawable/glass_bg</item>
-        <item name="android:statusBarColor">#0B1020</item>
-        <item name="android:navigationBarColor">#0B1020</item>
+        <item name="android:statusBarColor">@color/neu_base</item>
+        <item name="android:navigationBarColor">@color/neu_base</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:colorAccent">@color/neu_accent</item>
+        <item name="android:colorPrimary">@color/neu_accent</item>
+        <item name="android:colorPrimaryDark">@color/neu_accent_dark</item>
     </style>
 
-    <!-- 更新提示页：透明底 + 只画中间那张卡片（不用对话框，避免被当成弹窗广告） -->
     <style name="UpdateTransparent" parent="android:Theme.Material.NoActionBar">
         <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:windowIsTranslucent">true</item>
@@ -19,7 +22,6 @@
         <item name="android:navigationBarColor">#00000000</item>
     </style>
 
-    <!-- 锁屏常亮页：全屏、全透明、无动画、不抢焦点（挂在锁屏之上只为按住屏幕） -->
     <style name="LockKeepTheme" parent="android:Theme.Translucent.NoTitleBar">
         <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:windowIsTranslucent">true</item>
@@ -32,17 +34,15 @@
         <item name="android:navigationBarColor">#00000000</item>
     </style>
 
-    <!-- 吃药日历：星期表头（七列等宽、居中、灰蓝字） -->
     <style name="CalHead">
         <item name="android:layout_width">0dp</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_weight">1</item>
         <item name="android:gravity">center</item>
-        <item name="android:textColor">#FFA8B3CC</item>
+        <item name="android:textColor">@color/neu_text_sub</item>
         <item name="android:textSize">13sp</item>
     </style>
 
-    <!-- 左右滑动开关（设置项）：统一轨道 / 滑块，风格与整体液态玻璃一致 -->
     <style name="GlassSwitch">
         <item name="android:track">@drawable/switch_track</item>
         <item name="android:thumb">@drawable/switch_thumb</item>
@@ -52,16 +52,14 @@
         <item name="android:gravity">center_vertical</item>
     </style>
 
-    <!-- 下拉框（多选项）：统一深色玻璃底 + 一致的候选行样式 -->
     <style name="GlassSpinner">
         <item name="android:background">@drawable/field_bg</item>
-        <item name="android:popupBackground">#FF1B2138</item>
+        <item name="android:popupBackground">@color/neu_base</item>
         <item name="android:minHeight">46dp</item>
         <item name="android:paddingStart">12dp</item>
         <item name="android:paddingEnd">8dp</item>
     </style>
 
-    <!-- 设置项一行：左文字 + 右控件（浅玻璃卡片底） -->
     <style name="SettingRow">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
@@ -74,12 +72,11 @@
         <item name="android:paddingBottom">10dp</item>
     </style>
 
-    <!-- 设置项左侧的文字标签 -->
     <style name="SettingLabel">
         <item name="android:layout_width">0dp</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_weight">1</item>
-        <item name="android:textColor">#FFE4EEFF</item>
+        <item name="android:textColor">@color/neu_text</item>
         <item name="android:textSize">14sp</item>
     </style>
 </resources>
