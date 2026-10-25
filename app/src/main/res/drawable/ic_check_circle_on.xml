@@ -1,17 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="34dp"
-    android:height="34dp"
-    android:viewportWidth="34"
-    android:viewportHeight="34">
-    <path
-        android:fillColor="#FF00FFFF"
+    android:width="34dp" android:height="34dp" android:viewportWidth="34" android:viewportHeight="34">
+    <path android:fillColor="@color/neu_accent"
         android:pathData="M17,1 A16,16 0 0,1 33,17 A16,16 0 0,1 17,33 A16,16 0 0,1 1,17 A16,16 0 0,1 17,1 Z" />
-    <path
-        android:fillColor="#FFFFFFFF"
+    <path android:fillColor="#FFFFFFFF"
         android:pathData="M9.3,17.5 L14.1,22.4 L24.7,11.6"
-        android:strokeColor="#FFFFFFFF"
-        android:strokeWidth="4.5"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round" />
+        android:strokeColor="#FFFFFFFF" android:strokeWidth="4.5"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
 </vector>
