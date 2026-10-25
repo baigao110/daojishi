@@ -1,312 +1,312 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- 悬浮窗：整块是一张液态玻璃卡片（半透明 + 顶部高光 + 亮边），
-     悬浮在任意界面上时能透出背后内容。 -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/fRoot"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:background="@drawable/glass_float"
-    android:elevation="6dp"
-    android:padding="10dp"
-    android:minWidth="176dp">
-
-    <!-- 标题栏：标题 + 收缩 + 抽屉把手 + 关闭 -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical">
-
-        <TextView
-            android:id="@+id/fTitle"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:maxLines="1"
-            android:ellipsize="end"
-            android:textStyle="bold"
-            android:textSize="14sp" />
-
-        <Button
-            android:id="@+id/fCollapse"
-            android:layout_width="26dp"
-            android:layout_height="26dp"
-            android:layout_marginStart="4dp"
-            android:text="收"
-            android:textSize="11sp"
-            android:padding="0dp"
-            android:minWidth="0dp"
-            android:minHeight="0dp"
-            android:background="@drawable/glass_chip"
-            android:textColor="#9FD8FF" />
-
-        <Button
-            android:id="@+id/fDrawer"
-            android:layout_width="34dp"
-            android:layout_height="26dp"
-            android:layout_marginStart="4dp"
-            android:text="菜单"
-            android:textSize="9sp"
-            android:padding="0dp"
-            android:minWidth="0dp"
-            android:minHeight="0dp"
-            android:background="@drawable/glass_chip"
-            android:textColor="#7FDBFF" />
-
-        <Button
-            android:id="@+id/fClose"
-            android:layout_width="26dp"
-            android:layout_height="26dp"
-            android:layout_marginStart="4dp"
-            android:text="×"
-            android:textSize="15sp"
-            android:padding="0dp"
-            android:minWidth="0dp"
-            android:minHeight="0dp"
-            android:background="@drawable/glass_chip"
-            android:textColor="#FF6666" />
-
-        <!-- v177：华都云境悦府购买正计时的「暂停 / 开始」按钮（仅该内置项显示） -->
-        <Button
-            android:id="@+id/fPause"
-            android:layout_width="40dp"
-            android:layout_height="26dp"
-            android:layout_marginStart="4dp"
-            android:text="暂停"
-            android:textSize="11sp"
-            android:padding="0dp"
-            android:minWidth="0dp"
-            android:minHeight="0dp"
-            android:background="@drawable/glass_chip"
-            android:textColor="#9FD8FF"
-            android:visibility="gone" />
-
-    </LinearLayout>
-
-    <!-- 实时倒计时：拆成三段，跳秒动画只作用于最后一位数字 -->
-    <LinearLayout
-        android:id="@+id/fTime"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:orientation="horizontal"
-        android:gravity="center"
-        android:clipChildren="false">
-
-        <TextView
-            android:id="@+id/fTimeHead"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="22sp"
-            android:textStyle="bold"
-            android:includeFontPadding="false"
-            android:maxLines="1"
-            android:ellipsize="none" />
-
-        <TextView
-            android:id="@+id/fTimeLast"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="22sp"
-            android:textStyle="bold"
-            android:includeFontPadding="false"
-            android:maxLines="1"
-            android:ellipsize="none" />
-
-        <TextView
-            android:id="@+id/fTimeTail"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="22sp"
-            android:textStyle="bold"
-            android:includeFontPadding="false"
-            android:maxLines="1"
-            android:ellipsize="none" />
-    </LinearLayout>
-
-    <!-- 备注：显示在“显示模式”上方（主区域，不依赖抽屉） -->
-    <TextView
-        android:id="@+id/fRemark"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:textSize="10sp"
-        android:textColor="#9FD8FF"
-        android:gravity="center"
-        android:maxLines="2"
-        android:ellipsize="end"
-        android:visibility="gone" />
-
-    <TextView
-        android:id="@+id/fMode"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:textSize="11sp"
-        android:textColor="#FFA8B3CC"
-        android:gravity="center"
-        android:maxLines="1" />
-
-    <!-- 抽屉面板：默认收起，点“菜单”滑出 -->
-    <LinearLayout
-        android:id="@+id/fDrawerPanel"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:visibility="gone"
-        android:layout_marginTop="6dp"
-        android:padding="6dp"
-        android:background="@drawable/glass_field">
-
-        <TextView
-            android:id="@+id/fTargetTime"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textSize="10sp"
-            android:textColor="#7FDBFF"
-            android:maxLines="1"
-            android:ellipsize="end" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="玻璃透明度"
-                android:textSize="10sp"
-                android:textColor="#9FD8FF" />
-
-            <SeekBar
-                android:id="@+id/fOpacity"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginStart="6dp"
-                android:min="0"
-                android:max="80"
-                android:progress="0" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/fModeRow"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:orientation="horizontal">
-
-            <Button
-                android:id="@+id/fPrevMode"
-                android:layout_width="0dp"
-                android:layout_height="30dp"
-                android:layout_weight="1"
-                android:text="上一个显示模式"
-                android:textSize="10sp"
-                android:padding="0dp"
-                android:minWidth="0dp"
-                android:minHeight="0dp"
-                android:background="@drawable/glass_chip"
-                android:textColor="#9FD8FF" />
-
-            <Button
-                android:id="@+id/fNextMode"
-                android:layout_width="0dp"
-                android:layout_height="30dp"
-                android:layout_weight="1"
-                android:layout_marginStart="6dp"
-                android:text="下一个显示模式"
-                android:textSize="10sp"
-                android:padding="0dp"
-                android:minWidth="0dp"
-                android:minHeight="0dp"
-                android:background="@drawable/glass_chip"
-                android:textColor="#9FD8FF" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/fColorRow"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
-
-            <Button
-                android:id="@+id/fPrevColor"
-                android:layout_width="0dp"
-                android:layout_height="30dp"
-                android:layout_weight="1"
-                android:text="上一个主题色"
-                android:textSize="10sp"
-                android:padding="0dp"
-                android:minWidth="0dp"
-                android:minHeight="0dp"
-                android:background="@drawable/glass_chip"
-                android:textColor="#9FD8FF" />
-
-            <TextView
-                android:id="@+id/fColorName"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
-                android:layout_marginEnd="6dp"
-                android:text="青色"
-                android:textSize="11sp"
-                android:textStyle="bold"
-                android:textColor="#9FD8FF" />
-
-            <Button
-                android:id="@+id/fNextColor"
-                android:layout_width="0dp"
-                android:layout_height="30dp"
-                android:layout_weight="1"
-                android:text="下一个主题色"
-                android:textSize="10sp"
-                android:padding="0dp"
-                android:minWidth="0dp"
-                android:minHeight="0dp"
-                android:background="@drawable/glass_chip"
-                android:textColor="#9FD8FF" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:orientation="horizontal">
-
-            <Button
-                android:id="@+id/fEdit"
-                android:layout_width="0dp"
-                android:layout_height="30dp"
-                android:layout_weight="1"
-                android:text="编辑"
-                android:textSize="11sp"
-                android:padding="0dp"
-                android:minWidth="0dp"
-                android:minHeight="0dp"
-                android:background="@drawable/glass_chip"
-                android:textColor="#66FF99" />
-
-            <Button
-                android:id="@+id/fHide"
-                android:layout_width="0dp"
-                android:layout_height="30dp"
-                android:layout_weight="1"
-                android:layout_marginStart="6dp"
-                android:text="关闭悬浮窗"
-                android:textSize="11sp"
-                android:padding="0dp"
-                android:minWidth="0dp"
-                android:minHeight="0dp"
-                android:background="@drawable/glass_chip"
-                android:textColor="#FFCC66" />
-        </LinearLayout>
-    </LinearLayout>
-
-</LinearLayout>
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 悬浮窗：整块是一张液态玻璃卡片（半透明 + 顶部高光 + 亮边），
+     悬浮在任意界面上时能透出背后内容。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/fRoot"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/glass_float"
+    android:elevation="6dp"
+    android:padding="10dp"
+    android:minWidth="176dp">
+
+    <!-- 标题栏：标题 + 收缩 + 抽屉把手 + 关闭 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/fTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textStyle="bold"
+            android:textSize="14sp" />
+
+        <Button
+            android:id="@+id/fCollapse"
+            android:layout_width="26dp"
+            android:layout_height="26dp"
+            android:layout_marginStart="4dp"
+            android:text="收"
+            android:textSize="11sp"
+            android:padding="0dp"
+            android:minWidth="0dp"
+            android:minHeight="0dp"
+            android:background="@drawable/glass_chip"
+            android:textColor="#4A6CF7" />
+
+        <Button
+            android:id="@+id/fDrawer"
+            android:layout_width="34dp"
+            android:layout_height="26dp"
+            android:layout_marginStart="4dp"
+            android:text="菜单"
+            android:textSize="9sp"
+            android:padding="0dp"
+            android:minWidth="0dp"
+            android:minHeight="0dp"
+            android:background="@drawable/glass_chip"
+            android:textColor="#3A56D4" />
+
+        <Button
+            android:id="@+id/fClose"
+            android:layout_width="26dp"
+            android:layout_height="26dp"
+            android:layout_marginStart="4dp"
+            android:text="×"
+            android:textSize="15sp"
+            android:padding="0dp"
+            android:minWidth="0dp"
+            android:minHeight="0dp"
+            android:background="@drawable/glass_chip"
+            android:textColor="#E5484D" />
+
+        <!-- v177：华都云境悦府购买正计时的「暂停 / 开始」按钮（仅该内置项显示） -->
+        <Button
+            android:id="@+id/fPause"
+            android:layout_width="40dp"
+            android:layout_height="26dp"
+            android:layout_marginStart="4dp"
+            android:text="暂停"
+            android:textSize="11sp"
+            android:padding="0dp"
+            android:minWidth="0dp"
+            android:minHeight="0dp"
+            android:background="@drawable/glass_chip"
+            android:textColor="#4A6CF7"
+            android:visibility="gone" />
+
+    </LinearLayout>
+
+    <!-- 实时倒计时：拆成三段，跳秒动画只作用于最后一位数字 -->
+    <LinearLayout
+        android:id="@+id/fTime"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:clipChildren="false">
+
+        <TextView
+            android:id="@+id/fTimeHead"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:ellipsize="none" />
+
+        <TextView
+            android:id="@+id/fTimeLast"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:ellipsize="none" />
+
+        <TextView
+            android:id="@+id/fTimeTail"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:ellipsize="none" />
+    </LinearLayout>
+
+    <!-- 备注：显示在“显示模式”上方（主区域，不依赖抽屉） -->
+    <TextView
+        android:id="@+id/fRemark"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:textSize="10sp"
+        android:textColor="#4A6CF7"
+        android:gravity="center"
+        android:maxLines="2"
+        android:ellipsize="end"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/fMode"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:textSize="11sp"
+        android:textColor="#707A8C"
+        android:gravity="center"
+        android:maxLines="1" />
+
+    <!-- 抽屉面板：默认收起，点“菜单”滑出 -->
+    <LinearLayout
+        android:id="@+id/fDrawerPanel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone"
+        android:layout_marginTop="6dp"
+        android:padding="6dp"
+        android:background="@drawable/glass_field">
+
+        <TextView
+            android:id="@+id/fTargetTime"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="10sp"
+            android:textColor="#3A56D4"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="玻璃透明度"
+                android:textSize="10sp"
+                android:textColor="#4A6CF7" />
+
+            <SeekBar
+                android:id="@+id/fOpacity"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                android:min="0"
+                android:max="80"
+                android:progress="0" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/fModeRow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/fPrevMode"
+                android:layout_width="0dp"
+                android:layout_height="30dp"
+                android:layout_weight="1"
+                android:text="上一个显示模式"
+                android:textSize="10sp"
+                android:padding="0dp"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
+                android:background="@drawable/glass_chip"
+                android:textColor="#4A6CF7" />
+
+            <Button
+                android:id="@+id/fNextMode"
+                android:layout_width="0dp"
+                android:layout_height="30dp"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                android:text="下一个显示模式"
+                android:textSize="10sp"
+                android:padding="0dp"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
+                android:background="@drawable/glass_chip"
+                android:textColor="#4A6CF7" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/fColorRow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <Button
+                android:id="@+id/fPrevColor"
+                android:layout_width="0dp"
+                android:layout_height="30dp"
+                android:layout_weight="1"
+                android:text="上一个主题色"
+                android:textSize="10sp"
+                android:padding="0dp"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
+                android:background="@drawable/glass_chip"
+                android:textColor="#4A6CF7" />
+
+            <TextView
+                android:id="@+id/fColorName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:layout_marginEnd="6dp"
+                android:text="青色"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:textColor="#4A6CF7" />
+
+            <Button
+                android:id="@+id/fNextColor"
+                android:layout_width="0dp"
+                android:layout_height="30dp"
+                android:layout_weight="1"
+                android:text="下一个主题色"
+                android:textSize="10sp"
+                android:padding="0dp"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
+                android:background="@drawable/glass_chip"
+                android:textColor="#4A6CF7" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/fEdit"
+                android:layout_width="0dp"
+                android:layout_height="30dp"
+                android:layout_weight="1"
+                android:text="编辑"
+                android:textSize="11sp"
+                android:padding="0dp"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
+                android:background="@drawable/glass_chip"
+                android:textColor="#2E9E5B" />
+
+            <Button
+                android:id="@+id/fHide"
+                android:layout_width="0dp"
+                android:layout_height="30dp"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                android:text="关闭悬浮窗"
+                android:textSize="11sp"
+                android:padding="0dp"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
+                android:background="@drawable/glass_chip"
+                android:textColor="#C77B00" />
+        </LinearLayout>
+    </LinearLayout>
+
+</LinearLayout>
