@@ -377,7 +377,7 @@ object UpdateManager {
         ctx: Context,
         text: CharSequence,
         size: Float = 14f,
-        color: Int = 0xFF2B3144.toInt()
+        color: Int = 0xFFEAF2FF.toInt()
     ): TextView {
         val tv = TextView(ctx)
         tv.text = text
@@ -391,14 +391,14 @@ object UpdateManager {
     private fun kvRow(ctx: Context, label: String, value: String): LinearLayout {
         val row = LinearLayout(ctx)
         row.orientation = LinearLayout.HORIZONTAL
-        row.addView(bodyText(ctx, "$label：", 14f, 0xFF707A8C.toInt()))
-        row.addView(bodyText(ctx, value, 14f, 0xFF2B3144.toInt()))
+        row.addView(bodyText(ctx, "$label：", 14f, 0xFF8A9AB8.toInt()))
+        row.addView(bodyText(ctx, value, 14f, 0xFFEAF2FF.toInt()))
         return row
     }
 
     /** 青色小标题（如「更新日志」）。 */
     private fun sectionTitle(ctx: Context, text: String): TextView {
-        val tv = bodyText(ctx, text, 15f, 0xFF4A6CF7.toInt())
+        val tv = bodyText(ctx, text, 15f, 0xFF00D8FF.toInt())
         tv.setTypeface(tv.typeface, Typeface.BOLD)
         val lp = LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT,
@@ -968,7 +968,7 @@ object UpdateManager {
             /** 正文行（可传多条）。 */
             fun line(vararg ts: String) {
                 for (t in ts) {
-                    host.addView(bodyText(activity, "  · $t", 14f, 0xFF2B3144.toInt()))
+                    host.addView(bodyText(activity, "  · $t", 14f, 0xFFEAF2FF.toInt()))
                 }
             }
 
@@ -977,7 +977,7 @@ object UpdateManager {
                     activity,
                     "一个轻量、无广告、纯原生的倒计时工具。添加好倒计时后，可以在主界面查看，" +
                         "也可以让它悬浮在其它应用之上随时瞄一眼。",
-                    14f, 0xFF55607A.toInt()
+                    14f, 0xFFA9B8D6.toInt()
                 )
             )
 
@@ -1410,7 +1410,7 @@ object UpdateManager {
                 lp.topMargin = dp(activity, 12)
                 head.layoutParams = lp
 
-                val dateTv = bodyText(activity, date, 16f, 0xFF4A6CF7.toInt())
+                val dateTv = bodyText(activity, date, 16f, 0xFF00D8FF.toInt())
                 dateTv.setTypeface(dateTv.typeface, Typeface.BOLD)
                 head.addView(dateTv)
                 host.addView(head)
@@ -1419,7 +1419,7 @@ object UpdateManager {
                 // 但点日期本身同样可以展开 / 收起。
                 var arrow: TextView? = null
                 if (items.size > 1) {
-                    arrow = bodyText(activity, "  ▼", 14f, 0xFF4A6CF7.toInt())
+                    arrow = bodyText(activity, "  ▼", 14f, 0xFF00D8FF.toInt())
                     head.addView(arrow)
                 }
 
@@ -1483,13 +1483,13 @@ object UpdateManager {
             ctx,
             span,
             14f,
-            if (obsolete) 0xFF9AA1B2.toInt() else 0xFF2B3144.toInt()
+            if (obsolete) 0xFFA9B8D6.toInt() else 0xFFEAF2FF.toInt()
         )
         host.addView(tv)
     }
 
     private fun addVersionBlock(ctx: Context, host: LinearLayout, item: ChangelogItem) {
-        val tv = bodyText(ctx, item.version, 15f, 0xFF2B3144.toInt())
+        val tv = bodyText(ctx, item.version, 15f, 0xFFEAF2FF.toInt())
         tv.setTypeface(tv.typeface, Typeface.BOLD)
         val lp = LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT,
