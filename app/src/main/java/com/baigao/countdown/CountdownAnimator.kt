@@ -176,7 +176,7 @@ object AnimStyle {
         val ampX = dp(v, 17f)
         val ampY = dp(v, 14f)
         val steps = 5
-        val white = 0xFF2B3144.toInt()
+        val white = 0xFFEAF2FF.toInt()
         val anim = ValueAnimator.ofFloat(0f, 1f).apply { duration = 620 }
         anim.addUpdateListener { an ->
             val t = an.animatedFraction
@@ -278,7 +278,7 @@ object AnimStyle {
     private fun quake(v: View, baseColor: Int) {
         val tv = v as? TextView
         val amp = dp(v, 28f)
-        val white = 0xFF2B3144.toInt()
+        val white = 0xFFEAF2FF.toInt()
         val anim = ValueAnimator.ofFloat(0f, 1f).apply { duration = 660 }
         anim.addUpdateListener { an ->
             val t = an.animatedFraction
