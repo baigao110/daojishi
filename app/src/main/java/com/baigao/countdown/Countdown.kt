@@ -121,8 +121,8 @@ object BuiltIn {
     fun isRolling(type: Int): Boolean =
         type != NONE && type != GTA6
 
-    /** 是否为「正计时」内置项（华都云境悦府购买正计时）：方向与普通倒计时相反，显示「自起点至今已过去多久」。 */
-    fun isCountUp(type: Int): Boolean = type == HUADU_BUY
+    /** 是否为「正计时」内置项：原仅华都云境悦府购买正计时使用，该功能已删除（不可找回），故恒为 false。 */
+    fun isCountUp(type: Int): Boolean = false
 
     /**
      * 周期滚动型内置项的那「一格」有多长（分钟）：非周期滚动型恒返回 0。
@@ -542,12 +542,8 @@ data class Countdown(
     fun remainingText(now: Long = AlignedClock.now()): String {
         refreshBuiltInTarget()
         // 内置项的「标准模式」含义按类型定制（见 effectiveMode），所以必须把 builtIn 一起传下去
-        // v177：正计时（华都云境悦府购买）在「已暂停」时冻结在暂停那一刻；运行时取真实墙钟（毫秒模式也要真毫秒）
-        val effNow = when {
-            builtIn == BuiltIn.HUADU_BUY && paused -> pausedAt
-            builtIn == BuiltIn.HUADU_BUY -> System.currentTimeMillis()
-            else -> now
-        }
+        // 注：原华都云境悦府购买「正计时」的暂停冻结 / 真实墙钟逻辑已随该功能删除（不可找回）
+        val effNow = now
         return CountdownFormatter.remaining(targetTime, displayMode, effNow, builtIn)
     }
 }
