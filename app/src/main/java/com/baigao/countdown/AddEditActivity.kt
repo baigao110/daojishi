@@ -599,7 +599,7 @@ class AddEditActivity : Activity() {
                 ) { host ->
                     host.addView(TextView(this).apply {
                         text = "确定要把「$title」彻底删掉吗？\n\n删除后将无法找回——它不会再出现在「恢复内置」列表里。\n（重装 App 会重新生成，不影响重新安装）"
-                        setTextColor(Color.parseColor("#2B3144"))
+                        setTextColor(Color.parseColor("#EAF2FF"))
                         textSize = 14f
                         setLineSpacing(0f, 1.45f)
                         setShadowLayer(2f, 0f, 1f, Color.parseColor("#CC000000"))
