@@ -926,7 +926,7 @@ class MainActivity : Activity() {
             val probe = TextView(this).apply {
                 text = kv.second + if (i == checked) " ✓" else ""
                 textSize = 13f
-                setTextColor(0xFF2B3144.toInt())
+                setTextColor(0xFFEAF2FF.toInt())
             }
             probe.measure(
                 View.MeasureSpec.makeMeasureSpec(screenW - (40 * d).toInt(), View.MeasureSpec.AT_MOST),
@@ -951,7 +951,7 @@ class MainActivity : Activity() {
             val label = TextView(this).apply {
                 text = kv.second + if (i == checked) " ✓" else ""
                 textSize = 13f
-                setTextColor(0xFF2B3144.toInt())
+                setTextColor(0xFFEAF2FF.toInt())
                 setSingleLine(true)
                 // ⚠️ v157：这一行是「下拉框只剩色块」的根因 —— 不写这行就用默认参数
                 //    （宽度 MATCH_PARENT），名字会被量成 0 宽。
@@ -1037,7 +1037,7 @@ class MainActivity : Activity() {
         ) { host ->
             val tv = TextView(this)
             tv.text = body
-            tv.setTextColor(Color.parseColor("#2B3144"))
+            tv.setTextColor(Color.parseColor("#EAF2FF"))
             tv.textSize = 14f
             tv.setLineSpacing(0f, 1.45f)
             tv.setShadowLayer(2f, 0f, 1f, Color.parseColor("#CC000000"))
@@ -1058,7 +1058,7 @@ class MainActivity : Activity() {
         // 只在「该条目可用的模式」里列：当日倒计时跳过已下线的天数模式
         val modes = CountdownFormatter.availableModes(c.builtIn)
         if (modes.size < 2) return
-        val items = modes.map { m -> 0xFF4A6CF7.toInt() to CountdownFormatter.modeName(m, c.builtIn) }
+        val items = modes.map { m -> 0xFF00D8FF.toInt() to CountdownFormatter.modeName(m, c.builtIn) }
         showPickPopup(anchor, items, modes.indexOf(c.displayMode)) { i ->
             val t = modes[i]
             if (t == c.displayMode) return@showPickPopup
@@ -1071,7 +1071,7 @@ class MainActivity : Activity() {
 
     /** 列表上点「动画」按钮：弹出下拉框，直接挑一种跳秒动画（v156 起不再循环点）。 */
     fun onAnimPick(c: Countdown, anchor: View) {
-        val items = AnimStyle.NAMES.map { 0xFF4A6CF7.toInt() to it }
+        val items = AnimStyle.NAMES.map { 0xFF00D8FF.toInt() to it }
         showPickPopup(anchor, items, c.animStyle) { i ->
             if (i == c.animStyle) return@showPickPopup
             c.animStyle = i
@@ -1206,7 +1206,7 @@ class MainActivity : Activity() {
         ) { host ->
             val tv = TextView(this)
             tv.text = message
-            tv.setTextColor(Color.parseColor("#2B3144"))
+            tv.setTextColor(Color.parseColor("#EAF2FF"))
             tv.textSize = 14f
             tv.setLineSpacing(0f, 1.45f)
             tv.setShadowLayer(2f, 0f, 1f, Color.parseColor("#CC000000"))
@@ -1384,7 +1384,7 @@ class MainActivity : Activity() {
         ) { host ->
             host.addView(TextView(this).apply {
                 text = "勾选想找回的小倒计时，确定后按删掉之前的设置（主题、模式、动画、提示音这些）还原哦。"
-                setTextColor(Color.parseColor("#2B3144"))
+                setTextColor(Color.parseColor("#EAF2FF"))
                 textSize = 13f
                 setLineSpacing(0f, 1.3f)
                 setShadowLayer(2f, 0f, 1f, Color.parseColor("#CC000000"))
@@ -1410,7 +1410,7 @@ class MainActivity : Activity() {
             if (missing.isEmpty()) {
                 host.addView(TextView(this).apply {
                     text = "内置小倒计时都乖乖在列表里啦"
-                    setTextColor(Color.parseColor("#55607A"))
+                    setTextColor(Color.parseColor("#A9B8D6"))
                     textSize = 13f
                     setLineSpacing(0f, 1.25f)
                     setShadowLayer(2f, 0f, 1f, Color.parseColor("#CC000000"))
@@ -1426,7 +1426,7 @@ class MainActivity : Activity() {
                     minWidth = 0
                     minimumWidth = 0
                     includeFontPadding = false
-                    buttonTintList = android.content.res.ColorStateList.valueOf(Color.parseColor("#4A6CF7"))
+                    buttonTintList = android.content.res.ColorStateList.valueOf(Color.parseColor("#00D8FF"))
                     setOnCheckedChangeListener { _, b -> checked[i] = b }
                 }
                 boxes.add(cb)
@@ -1436,7 +1436,7 @@ class MainActivity : Activity() {
                 }
                 texts.addView(TextView(this).apply {
                     text = def.second
-                    setTextColor(Color.parseColor("#2B3144"))
+                    setTextColor(Color.parseColor("#EAF2FF"))
                     textSize = 15f
                     setLineSpacing(0f, 1.15f)
                     setShadowLayer(2f, 0f, 1f, Color.parseColor("#CC000000"))
@@ -1446,7 +1446,7 @@ class MainActivity : Activity() {
                 })
                 texts.addView(TextView(this).apply {
                     text = def.third
-                    setTextColor(Color.parseColor("#55607A"))
+                    setTextColor(Color.parseColor("#A9B8D6"))
                     textSize = 12.5f
                     setLineSpacing(0f, 1.15f)
                     setShadowLayer(2f, 0f, 1f, Color.parseColor("#CC000000"))
@@ -1476,7 +1476,7 @@ class MainActivity : Activity() {
     private fun selectAllBtn(label: String, onClick: () -> Unit): TextView =
         TextView(this).apply {
             text = label
-            setTextColor(Color.parseColor("#4A6CF7"))
+            setTextColor(Color.parseColor("#00D8FF"))
             textSize = 13f
             setShadowLayer(2f, 0f, 1f, Color.parseColor("#CC000000"))
             setPadding(dp(12), dp(6), dp(12), dp(6))
