@@ -41,7 +41,7 @@ object DoseEditor {
         val tip = TextView(activity).apply {
             text = "每天 ${MedicineReminder.timesPerDay(activity)} 次，可以分别改时刻和服药时机哦；" +
                 "点「保存」就生效，并覆盖全天 24 小时哦。"
-            setTextColor(0xFFC6D5EF.toInt())
+            setTextColor(0xFF55607A.toInt())
             textSize = 13f
         }
         root.addView(tip)
@@ -70,7 +70,7 @@ object DoseEditor {
             val timeBtn = Button(activity).apply {
                 text = String.format(Locale.getDefault(), "%02d:%02d", times[i].first, times[i].second)
                 textSize = 14f
-                setTextColor(0xFF001018.toInt())
+                setTextColor(0xFF2B3144.toInt())
                 setBackgroundResource(R.drawable.circle_btn)
                 val blp = LinearLayout.LayoutParams(
                     (96 * density).toInt(), (40 * density).toInt()
@@ -118,7 +118,7 @@ object DoseEditor {
                 sb.append(MedicineReminder.doseMarker(idx)).append(' ').append(d).append("\n")
             }
             text = sb.toString().trimEnd()
-            setTextColor(0xFFC6D5EF.toInt())
+            setTextColor(0xFF55607A.toInt())
             textSize = 12f
             setLineSpacing(4f, 1.1f)
             val dlp = LinearLayout.LayoutParams(
