@@ -244,7 +244,7 @@ class MedicineReminderActivity : Activity() {
                 text = SpannableStringBuilder().apply {
                     lines.forEach { append(it); append("\n") }
                 }
-                setTextColor(android.graphics.Color.parseColor("#FFE4EEFF"))
+                setTextColor(android.graphics.Color.parseColor("#2B3144"))
                 textSize = 13f
                 setLineSpacing(4f, 1.2f)
                 setShadowLayer(2f, 0f, 1f, android.graphics.Color.parseColor("#CC000000"))
@@ -288,7 +288,7 @@ class MedicineReminderActivity : Activity() {
         ) { host ->
             val tv = TextView(this).apply {
                 this.text = text
-                setTextColor(android.graphics.Color.parseColor("#FFE4EEFF"))
+                setTextColor(android.graphics.Color.parseColor("#2B3144"))
                 textSize = 13f
                 setLineSpacing(4f, 1.2f)
                 setShadowLayer(2f, 0f, 1f, android.graphics.Color.parseColor("#CC000000"))
@@ -366,7 +366,7 @@ class MedicineReminderActivity : Activity() {
                     MedicineReminder.timesPerDay(this@MedicineReminderActivity) + " 次：" +
                     MedicineReminder.doseScheduleText(this@MedicineReminderActivity) + "）；\n" +
                     "想改每天的固定时刻和次数，请用上面的「提醒时间 / 每天次数」按钮哦。"
-                setTextColor(android.graphics.Color.parseColor("#FFC6D5EF"))
+                setTextColor(android.graphics.Color.parseColor("#55607A"))
                 textSize = 13f
                 setShadowLayer(2f, 0f, 1f, android.graphics.Color.parseColor("#CC000000"))
                 val tlp = LinearLayout.LayoutParams(
@@ -381,7 +381,7 @@ class MedicineReminderActivity : Activity() {
             val reset = Button(this).apply {
                 text = "回到常规（每天 ${MedicineReminder.timeText(this@MedicineReminderActivity)}）"
                 textSize = 13f
-                setTextColor(android.graphics.Color.parseColor("#FF001018"))
+                setTextColor(android.graphics.Color.parseColor("#2B3144"))
                 setBackgroundResource(R.drawable.circle_btn)
                 val blp = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
