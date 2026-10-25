@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="AppTheme" parent="android:Theme.Material.NoActionBar">
-        <item name="android:colorBackground">@color/neu_base</item>
+        <item name="android:colorBackground">@color/glass_bg_center</item>
         <item name="android:windowBackground">@drawable/glass_bg</item>
-        <item name="android:statusBarColor">@color/neu_base</item>
-        <item name="android:navigationBarColor">@color/neu_base</item>
-        <item name="android:windowLightStatusBar">true</item>
-        <item name="android:windowLightNavigationBar">true</item>
-        <item name="android:colorAccent">@color/neu_accent</item>
-        <item name="android:colorPrimary">@color/neu_accent</item>
-        <item name="android:colorPrimaryDark">@color/neu_accent_dark</item>
+        <item name="android:statusBarColor">@color/glass_bg_bottom</item>
+        <item name="android:navigationBarColor">@color/glass_bg_bottom</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:colorAccent">@color/glass_accent</item>
+        <item name="android:colorPrimary">@color/glass_accent</item>
+        <item name="android:colorPrimaryDark">@color/glass_accent_deep</item>
     </style>
 
     <style name="UpdateTransparent" parent="android:Theme.Material.NoActionBar">
@@ -39,7 +39,7 @@
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_weight">1</item>
         <item name="android:gravity">center</item>
-        <item name="android:textColor">@color/neu_text_sub</item>
+        <item name="android:textColor">@color/glass_text_sub</item>
         <item name="android:textSize">13sp</item>
     </style>
 
@@ -54,7 +54,7 @@
 
     <style name="GlassSpinner">
         <item name="android:background">@drawable/field_bg</item>
-        <item name="android:popupBackground">@color/neu_base</item>
+        <item name="android:popupBackground">@color/glass_surface</item>
         <item name="android:minHeight">46dp</item>
         <item name="android:paddingStart">12dp</item>
         <item name="android:paddingEnd">8dp</item>
@@ -76,7 +76,7 @@
         <item name="android:layout_width">0dp</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_weight">1</item>
-        <item name="android:textColor">@color/neu_text</item>
+        <item name="android:textColor">@color/glass_text</item>
         <item name="android:textSize">14sp</item>
     </style>
 </resources>
