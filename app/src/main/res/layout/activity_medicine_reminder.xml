@@ -4,11 +4,6 @@
     android:layout_height="match_parent"
     android:background="@drawable/glass_bg">
 
-    <!-- 液态玻璃背景层：模糊光斑 -->
-    <com.baigao.countdown.GlassBackdrop
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
-
     <!-- 顶部返回栏 -->
     <LinearLayout
         android:layout_width="match_parent"
@@ -21,7 +16,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="‹ 返回"
-            android:textColor="#00FFFF"
+            android:textColor="#4A6CF7"
             android:textSize="16sp"
             android:padding="4dp" />
 
@@ -30,7 +25,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="吃药提醒"
-            android:textColor="#00FFFF"
+            android:textColor="#4A6CF7"
             android:textSize="20sp"
             android:textStyle="bold"
             android:gravity="center"
@@ -65,7 +60,7 @@
                     android:layout_height="wrap_content"
                     android:gravity="center"
                     android:text="吃药提醒"
-                    android:textColor="#00FFFF"
+                    android:textColor="#4A6CF7"
                     android:textSize="16sp"
                     android:textStyle="bold" />
 
@@ -156,7 +151,7 @@
                     android:layout_marginTop="10dp"
                     android:gravity="center"
                     android:lineSpacingExtra="3dp"
-                    android:textColor="#FFEAF6FF"
+                    android:textColor="#2B3144"
                     android:textSize="13sp"
                     android:text="" />
 
@@ -199,7 +194,7 @@
                     android:layout_marginTop="8dp"
                     android:gravity="center"
                     android:lineSpacingExtra="3dp"
-                    android:textColor="#FFEAF6FF"
+                    android:textColor="#2B3144"
                     android:textSize="13sp"
                     android:text="今日：还没吃" />
             </LinearLayout>
@@ -210,7 +205,7 @@
                 android:layout_marginTop="16dp"
                 android:gravity="center"
                 android:lineSpacingExtra="4dp"
-                android:textColor="#FFA8B3CC"
+                android:textColor="#707A8C"
                 android:textSize="12sp"
                 android:text="为避免错过吃药提醒，建议把本应用的「自启动 / 后台运行」和电池优化都打开哦。\n退出了 App 提醒照样会响，全靠系统闹钟 + 精确闹钟 + 后台巡检这几道保险呢。" />
 
