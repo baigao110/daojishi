@@ -312,7 +312,7 @@ object NotifyGuard {
                     btn.text = "第 ${one.no} 项 · ${one.fixLabel ?: "去设置看看"}"
                     btn.textSize = 12f
                     btn.isAllCaps = false
-                    btn.setTextColor(android.graphics.Color.parseColor("#FF001018"))
+                    btn.setTextColor(android.graphics.Color.parseColor("#2B3144"))
                     btn.setBackgroundResource(R.drawable.circle_btn)
                     btn.setPadding(
                         (14 * dm.density).toInt(), 0, (14 * dm.density).toInt(), 0
