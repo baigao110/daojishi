@@ -1,21 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 小号玻璃按钮（列表行 / 悬浮窗里的操作按钮）。 -->
+<!-- 新拟态：凸起的小药丸/按钮 -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item>
-        <shape android:shape="rectangle">
-            <gradient
-                android:angle="270"
-                android:startColor="#30FFFFFF"
-                android:endColor="#14FFFFFF" />
-            <corners android:radius="10dp" />
-        </shape>
+    <item android:left="3dp" android:top="3dp">
+        <shape android:shape="rectangle"><solid android:color="@color/neu_shadow_dark"/><corners android:radius="12dp"/></shape>
+    </item>
+    <item android:right="3dp" android:bottom="3dp">
+        <shape android:shape="rectangle"><solid android:color="@color/neu_shadow_light"/><corners android:radius="12dp"/></shape>
     </item>
     <item>
-        <shape android:shape="rectangle">
-            <stroke
-                android:width="1dp"
-                android:color="@color/glass_stroke_soft" />
-            <corners android:radius="10dp" />
-        </shape>
+        <shape android:shape="rectangle"><solid android:color="@color/neu_surface"/><corners android:radius="12dp"/></shape>
     </item>
 </layer-list>
