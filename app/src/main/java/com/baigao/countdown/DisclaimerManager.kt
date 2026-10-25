@@ -59,7 +59,7 @@ object DisclaimerManager {
             )
             val tv = TextView(activity).apply {
                 text = lines.joinToString("\n")
-                setTextColor(Color.parseColor("#2B3144"))
+                setTextColor(Color.parseColor("#EAF2FF"))
                 textSize = 14f
                 setLineSpacing(0f, 1.25f)
                 setShadowLayer(2f, 0f, 1f, Color.parseColor("#CC000000"))
