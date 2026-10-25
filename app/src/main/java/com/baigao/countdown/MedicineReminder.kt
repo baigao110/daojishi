@@ -243,7 +243,7 @@ object MedicineReminder {
     /** 第 i 次服药的颜色：亮蓝 / 橙 / 绿 / 紫，肉眼可区分。 */
     fun doseColor(i: Int): Int =
         intArrayOf(0xFF5AC8FA.toInt(), 0xFFFF9F0A.toInt(), 0xFF30D158.toInt(), 0xFFBF5AF2.toInt())
-            .getOrElse(i) { 0xFF707A8C.toInt() }
+            .getOrElse(i) { 0xFF8A9AB8.toInt() }
 
     /** 把「每天 N 次」的时刻拼成可读串，含次数标记与服药时机，如「① 09:00 空腹服 ② 21:00 睡前服」。 */
     fun doseScheduleText(ctx: Context): String =
@@ -276,7 +276,7 @@ object MedicineReminder {
         }
         ctxSpans.forEach { (s, e) ->
             ss.setSpan(
-                ForegroundColorSpan(0xFF55607A.toInt()), s, e,
+                ForegroundColorSpan(0xFFA9B8D6.toInt()), s, e,
                 SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE
             )
         }
