@@ -1,56 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 不透明玻璃卡片：用于列表「前景层」。
-
-     前景层背后还压着一层操作按钮（编辑 / 删除），
-     所以这张卡必须有一层不透明底：只用半透明玻璃的话，底下的按钮会透上来，
-     和倒计时文字叠在一起（看起来像按钮被倒计时遮挡）。
-     底之上仍然保留玻璃渐变、亮边与顶部镜面高光，观感与其它玻璃卡一致。 -->
+<!-- 新拟态：凸起的卡片（左上亮、右下暗的双层投影） -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item>
-        <shape android:shape="rectangle">
-            <gradient
-                android:angle="270"
-                android:startColor="#E01B2540"
-                android:centerColor="#E0161E33"
-                android:endColor="#D6121828"
-                android:centerY="0.38" />
-            <corners android:radius="18dp" />
-        </shape>
+    <item android:left="5dp" android:top="5dp">
+        <shape android:shape="rectangle"><solid android:color="@color/neu_shadow_dark"/><corners android:radius="18dp"/></shape>
+    </item>
+    <item android:right="5dp" android:bottom="5dp">
+        <shape android:shape="rectangle"><solid android:color="@color/neu_shadow_light"/><corners android:radius="18dp"/></shape>
     </item>
     <item>
-        <shape android:shape="rectangle">
-            <gradient
-                android:angle="270"
-                android:startColor="#12FFFFFF"
-                android:centerColor="#08FFFFFF"
-                android:endColor="#04FFFFFF"
-                android:centerY="0.38" />
-            <corners android:radius="18dp" />
-        </shape>
-    </item>
-    <item>
-        <shape android:shape="rectangle">
-            <stroke
-                android:width="1dp"
-                android:color="@color/glass_stroke" />
-            <corners android:radius="18dp" />
-        </shape>
-    </item>
-    <!-- 顶部镜面高光 -->
-    <item
-        android:left="2dp"
-        android:right="2dp"
-        android:top="1dp"
-        android:bottom="0dp">
-        <shape android:shape="rectangle">
-            <gradient
-                android:angle="270"
-                android:startColor="@color/glass_highlight"
-                android:endColor="#00FFFFFF" />
-            <corners
-                android:topLeftRadius="17dp"
-                android:topRightRadius="17dp" />
-            <size android:height="6dp" />
-        </shape>
+        <shape android:shape="rectangle"><solid android:color="@color/neu_surface"/><corners android:radius="18dp"/></shape>
     </item>
 </layer-list>
