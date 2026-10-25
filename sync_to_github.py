@@ -254,7 +254,7 @@ def main():
     if counts["UPDATED"] == 0 and counts["NEW"] == 0 and counts["FAILED"] == 0:
         print("  => 源码已与 GitHub 完全同步")
 
-    note_line = "🎨 视觉风格还原为「液态玻璃（Liquid Glass）深色调」——深色背景 + 青色强调色 + 磨砂玻璃卡片与按钮，去掉上一版的浅色新拟态。\n🗑️ 两处精简保留：① 移除「药名库」功能（选药走「快速选择」常用项）；② 彻底删除全部「华都云境悦府」倒计时（主档 + 12~24 日 + 购房正计时），不可找回。版本 v1.0.0.63。"
+    note_line = "📅 本版本还原为 2026-10-17 的内容/功能/风格：保留「药名库」内置药品名（选药可浏览药名库）、保留「华都云境悦府」全部倒计时（主档+12~24日+购房正计时），视觉为「液态玻璃 Liquid Glass 深色调」。版本号标记为 v1.0.0.63。"
     print(f"=== 2. 上传 APK 到 Release {tag} ===")
     create_release_if_missing(tag, note_line)
     upload_apk(tag, apk_name)
