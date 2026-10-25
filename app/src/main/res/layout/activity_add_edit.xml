@@ -27,7 +27,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="‹ 返回"
-            android:textColor="#4A6CF7"
+            android:textColor="#00D8FF"
             android:textSize="16sp"
             android:padding="4dp" />
 
@@ -37,7 +37,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="添加小倒计时"
-            android:textColor="#4A6CF7"
+            android:textColor="#00D8FF"
             android:textSize="20sp"
             android:textStyle="bold"
             android:gravity="center"
@@ -47,7 +47,7 @@
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:background="#1A4A6CF7" />
+        android:background="#1A00D8FF" />
 
     <ScrollView
         android:layout_width="match_parent"
@@ -65,7 +65,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="名称"
-                android:textColor="#4A6CF7"
+                android:textColor="#00D8FF"
                 android:textSize="13sp"
                 android:textStyle="bold"
                 android:layout_marginTop="4dp" />
@@ -75,18 +75,18 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
-                android:textColor="#2B3144"
+                android:textColor="#EAF2FF"
                 android:background="@drawable/field_bg"
                 android:padding="12dp"
                 android:hint="例如：项目截止"
-                android:textColorHint="#9AA1B2" />
+                android:textColorHint="#6E7E9E" />
 
             <TextView
                 android:id="@+id/dateLabel"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="目标日期"
-                android:textColor="#4A6CF7"
+                android:textColor="#00D8FF"
                 android:textSize="13sp"
                 android:textStyle="bold"
                 android:layout_marginTop="16dp" />
@@ -111,7 +111,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="目标时间"
-                android:textColor="#4A6CF7"
+                android:textColor="#00D8FF"
                 android:textSize="13sp"
                 android:textStyle="bold"
                 android:layout_marginTop="16dp" />
@@ -138,7 +138,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="倒计时类型"
-                android:textColor="#4A6CF7"
+                android:textColor="#00D8FF"
                 android:textSize="13sp"
                 android:textStyle="bold"
                 android:layout_marginTop="16dp" />
@@ -158,7 +158,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="是否循环"
-                android:textColor="#4A6CF7"
+                android:textColor="#00D8FF"
                 android:textSize="13sp"
                 android:textStyle="bold"
                 android:layout_marginTop="16dp" />
@@ -187,7 +187,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="目标时刻（100年内倒计时）"
-                    android:textColor="#4A6CF7"
+                    android:textColor="#00D8FF"
                     android:textSize="13sp"
                     android:textStyle="bold"
                     android:layout_marginTop="16dp" />
@@ -261,7 +261,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="主题颜色"
-                android:textColor="#4A6CF7"
+                android:textColor="#00D8FF"
                 android:textSize="13sp"
                 android:textStyle="bold"
                 android:layout_marginTop="16dp" />
@@ -273,7 +273,7 @@
                 android:layout_marginTop="6dp"
                 android:minHeight="46dp"
                 android:background="@drawable/field_bg"
-                android:popupBackground="#F3F5F9"
+                android:popupBackground="#16243F"
                 android:paddingStart="12dp"
                 android:paddingEnd="8dp" />
 
@@ -282,7 +282,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="标准模式"
-                android:textColor="#4A6CF7"
+                android:textColor="#00D8FF"
                 android:textSize="13sp"
                 android:textStyle="bold"
                 android:layout_marginTop="16dp" />
@@ -302,14 +302,14 @@
                 android:gravity="center"
                 android:lineSpacingExtra="3dp"
                 android:text="选好之后这个倒计时的显示方式就定啦，以后随时能回来改，没有次数限制"
-                android:textColor="#707A8C"
+                android:textColor="#A9B8D6"
                 android:textSize="12sp" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="动画效果"
-                android:textColor="#4A6CF7"
+                android:textColor="#00D8FF"
                 android:textSize="13sp"
                 android:textStyle="bold"
                 android:layout_marginTop="16dp" />
@@ -321,7 +321,7 @@
                 android:layout_marginTop="6dp"
                 android:minHeight="46dp"
                 android:background="@drawable/field_bg"
-                android:popupBackground="#F3F5F9"
+                android:popupBackground="#16243F"
                 android:paddingStart="12dp"
                 android:paddingEnd="8dp" />
 
@@ -329,7 +329,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="备注"
-                android:textColor="#4A6CF7"
+                android:textColor="#00D8FF"
                 android:textSize="13sp"
                 android:textStyle="bold"
                 android:layout_marginTop="16dp" />
@@ -340,7 +340,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
                 android:minLines="2"
-                android:textColor="#2B3144"
+                android:textColor="#EAF2FF"
                 android:background="@drawable/field_bg"
                 android:padding="12dp"
                 android:gravity="top" />
@@ -390,7 +390,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="提示音"
-                    android:textColor="#4A6CF7"
+                    android:textColor="#00D8FF"
                     android:textSize="13sp"
                     android:textStyle="bold"
                     android:layout_marginTop="16dp" />
@@ -414,7 +414,7 @@
                     android:text="清除自定义提示音"
                     android:textSize="15sp"
                     android:textStyle="bold"
-                    android:textColor="#E5484D"
+                    android:textColor="#FF5C6C"
                     android:background="@drawable/pill_btn_gray" />
             </LinearLayout>
             </LinearLayout>
@@ -429,7 +429,7 @@
                 android:text="彻底删除（不能找回）"
                 android:textSize="15sp"
                 android:textStyle="bold"
-                android:textColor="#E5484D"
+                android:textColor="#FF5C6C"
                 android:background="@drawable/pill_btn_gray"
                 android:visibility="gone" />
 
@@ -459,7 +459,7 @@
                     android:text="先不了"
                     android:textSize="15sp"
                     android:textStyle="bold"
-                    android:textColor="#9AA1B2"
+                    android:textColor="#6E7E9E"
                     android:background="@drawable/pill_btn_gray" />
             </LinearLayout>
 
