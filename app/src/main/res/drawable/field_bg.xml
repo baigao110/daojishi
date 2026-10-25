@@ -1,5 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 添加/编辑倒计时页的输入框底板：深色圆角 + 淡描边，与「关于」页的深色风格一致。 -->
+<!-- 新拟态：凹陷的输入框（左上暗、右下亮的“挖进去”效果） -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@drawable/glass_field" />
+    <item>
+        <shape android:shape="rectangle"><solid android:color="@color/neu_surface"/><corners android:radius="14dp"/></shape>
+    </item>
+    <item android:right="3dp" android:bottom="3dp">
+        <shape android:shape="rectangle"><solid android:color="@color/neu_shadow_dark"/><corners android:radius="14dp"/></shape>
+    </item>
+    <item android:left="3dp" android:top="3dp">
+        <shape android:shape="rectangle"><solid android:color="@color/neu_shadow_light"/><corners android:radius="14dp"/></shape>
+    </item>
+    <item android:left="3dp" android:top="3dp" android:right="3dp" android:bottom="3dp">
+        <shape android:shape="rectangle"><solid android:color="@color/neu_surface"/><corners android:radius="11dp"/></shape>
+    </item>
 </layer-list>
