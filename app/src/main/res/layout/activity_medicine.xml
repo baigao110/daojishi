@@ -32,7 +32,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="‹ 返回"
-                android:textColor="#4A6CF7"
+                android:textColor="#00D8FF"
                 android:textSize="16sp"
                 android:padding="4dp" />
 
@@ -41,7 +41,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="吃药日历"
-                android:textColor="#4A6CF7"
+                android:textColor="#00D8FF"
                 android:textSize="20sp"
                 android:textStyle="bold"
                 android:gravity="center"
@@ -73,7 +73,7 @@
                 android:layout_weight="1"
                 android:gravity="center"
                 android:text="2026年9月"
-                android:textColor="#2B3144"
+                android:textColor="#EAF2FF"
                 android:textSize="17sp"
                 android:textStyle="bold" />
 
@@ -124,7 +124,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="● 吃过啦"
-                android:textColor="#4A6CF7"
+                android:textColor="#00D8FF"
                 android:textSize="13sp" />
 
             <TextView
@@ -132,7 +132,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="14dp"
                 android:text="● 还没吃"
-                android:textColor="#55607A"
+                android:textColor="#A9B8D6"
                 android:textSize="13sp" />
 
             <TextView
@@ -140,7 +140,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="14dp"
                 android:text="○ 今天"
-                android:textColor="#3A56D4"
+                android:textColor="#0098C0"
                 android:textSize="13sp" />
         </LinearLayout>
 
@@ -198,7 +198,7 @@
             android:layout_marginTop="8dp"
             android:gravity="center"
             android:lineSpacingExtra="3dp"
-            android:textColor="#2B3144"
+            android:textColor="#EAF2FF"
             android:textSize="13sp"
             android:text="本月吃过 0 天" />
 
@@ -220,7 +220,7 @@
             android:layout_marginTop="12dp"
             android:gravity="center"
             android:lineSpacingExtra="3dp"
-            android:textColor="#707A8C"
+            android:textColor="#A9B8D6"
             android:textSize="12sp"
             android:text="点过去的或今天的日期、或下面「记一笔吃药」都能补记，每次吃哪种药从「常用项」里选（记录过 / 历史上吃过的药自动收集，也可手动添加）。\n每天可记多次（按上面「每天次数」设定），重复记录会提醒「今天已吃药了，不要重复吃药哦！」。\n提醒时间、次数和服药时机可在「关于」页或上面按钮设置。" />
 
@@ -242,7 +242,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="吃药记录（每天次数）"
-                    android:textColor="#4A6CF7"
+                    android:textColor="#00D8FF"
                     android:textSize="16sp"
                     android:textStyle="bold" />
 
@@ -288,7 +288,7 @@
                 android:layout_marginTop="10dp"
                 android:gravity="center"
                 android:text="还没有吃药记录哦～点上面按钮记一笔吧"
-                android:textColor="#707A8C"
+                android:textColor="#A9B8D6"
                 android:textSize="13sp" />
         </LinearLayout>
     </LinearLayout>
