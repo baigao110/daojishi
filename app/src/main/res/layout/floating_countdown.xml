@@ -39,7 +39,7 @@
             android:minWidth="0dp"
             android:minHeight="0dp"
             android:background="@drawable/glass_chip"
-            android:textColor="#4A6CF7" />
+            android:textColor="#00D8FF" />
 
         <Button
             android:id="@+id/fDrawer"
@@ -52,7 +52,7 @@
             android:minWidth="0dp"
             android:minHeight="0dp"
             android:background="@drawable/glass_chip"
-            android:textColor="#3A56D4" />
+            android:textColor="#0098C0" />
 
         <Button
             android:id="@+id/fClose"
@@ -65,7 +65,7 @@
             android:minWidth="0dp"
             android:minHeight="0dp"
             android:background="@drawable/glass_chip"
-            android:textColor="#E5484D" />
+            android:textColor="#FF5C6C" />
 
         <!-- v177：华都云境悦府购买正计时的「暂停 / 开始」按钮（仅该内置项显示） -->
         <Button
@@ -79,7 +79,7 @@
             android:minWidth="0dp"
             android:minHeight="0dp"
             android:background="@drawable/glass_chip"
-            android:textColor="#4A6CF7"
+            android:textColor="#00D8FF"
             android:visibility="gone" />
 
     </LinearLayout>
@@ -132,7 +132,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="2dp"
         android:textSize="10sp"
-        android:textColor="#4A6CF7"
+        android:textColor="#00D8FF"
         android:gravity="center"
         android:maxLines="2"
         android:ellipsize="end"
@@ -144,7 +144,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="2dp"
         android:textSize="11sp"
-        android:textColor="#707A8C"
+        android:textColor="#A9B8D6"
         android:gravity="center"
         android:maxLines="1" />
 
@@ -164,7 +164,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textSize="10sp"
-            android:textColor="#3A56D4"
+            android:textColor="#0098C0"
             android:maxLines="1"
             android:ellipsize="end" />
 
@@ -180,7 +180,7 @@
                 android:layout_height="wrap_content"
                 android:text="玻璃透明度"
                 android:textSize="10sp"
-                android:textColor="#4A6CF7" />
+                android:textColor="#00D8FF" />
 
             <SeekBar
                 android:id="@+id/fOpacity"
@@ -211,7 +211,7 @@
                 android:minWidth="0dp"
                 android:minHeight="0dp"
                 android:background="@drawable/glass_chip"
-                android:textColor="#4A6CF7" />
+                android:textColor="#00D8FF" />
 
             <Button
                 android:id="@+id/fNextMode"
@@ -225,7 +225,7 @@
                 android:minWidth="0dp"
                 android:minHeight="0dp"
                 android:background="@drawable/glass_chip"
-                android:textColor="#4A6CF7" />
+                android:textColor="#00D8FF" />
         </LinearLayout>
 
         <LinearLayout
@@ -247,7 +247,7 @@
                 android:minWidth="0dp"
                 android:minHeight="0dp"
                 android:background="@drawable/glass_chip"
-                android:textColor="#4A6CF7" />
+                android:textColor="#00D8FF" />
 
             <TextView
                 android:id="@+id/fColorName"
@@ -258,7 +258,7 @@
                 android:text="青色"
                 android:textSize="11sp"
                 android:textStyle="bold"
-                android:textColor="#4A6CF7" />
+                android:textColor="#00D8FF" />
 
             <Button
                 android:id="@+id/fNextColor"
@@ -271,7 +271,7 @@
                 android:minWidth="0dp"
                 android:minHeight="0dp"
                 android:background="@drawable/glass_chip"
-                android:textColor="#4A6CF7" />
+                android:textColor="#00D8FF" />
         </LinearLayout>
 
         <LinearLayout
