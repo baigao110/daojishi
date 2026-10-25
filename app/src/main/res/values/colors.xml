@@ -1,35 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- 新拟态（Neumorphism）浅色色板 -->
-    <color name="neu_base">#E8ECF2</color>
-    <color name="neu_base_top">#ECF0F6</color>
-    <color name="neu_base_bottom">#E1E6EE</color>
-    <color name="neu_surface">#E8ECF2</color>
-    <color name="neu_shadow_dark">#C5CBD8</color>
-    <color name="neu_shadow_light">#FFFFFF</color>
-    <color name="neu_accent">#4A6CF7</color>
-    <color name="neu_accent_dark">#3A56D4</color>
-    <color name="neu_accent_soft">#E4E9FF</color>
-    <color name="neu_accent_on">#FFFFFF</color>
-    <color name="neu_text">#2B3144</color>
-    <color name="neu_text_sub">#6E7689</color>
-    <color name="neu_text_dim">#9AA1B2</color>
-    <color name="neu_chip">#E2E6EE</color>
-    <!-- 兼容旧引用（已不被使用，保留以防万一） -->
-    <color name="glass_bg_top">#ECF0F6</color>
-    <color name="glass_bg_center">#E8ECF2</color>
-    <color name="glass_bg_bottom">#E1E6EE</color>
-    <color name="glass_fill_top">#E8ECF2</color>
-    <color name="glass_fill_center">#E8ECF2</color>
-    <color name="glass_fill_bottom">#E8ECF2</color>
-    <color name="glass_stroke">#C5CBD8</color>
-    <color name="glass_stroke_soft">#D5DAE3</color>
-    <color name="glass_highlight">#FFFFFF</color>
-    <color name="glass_accent">#4A6CF7</color>
-    <color name="glass_accent_sheen">#6E86F9</color>
-    <color name="glass_accent_deep">#3A56D4</color>
-    <color name="glass_text">#2B3144</color>
-    <color name="glass_text_sub">#6E7689</color>
-    <color name="glass_text_dim">#9AA1B2</color>
-    <color name="glass_text_on_accent">#FFFFFF</color>
+    <!-- 液态玻璃（Liquid Glass）深色调色板 -->
+    <color name="glass_bg_top">#0B1730</color>
+    <color name="glass_bg_center">#070F22</color>
+    <color name="glass_bg_bottom">#04080F</color>
+    <color name="glass_fill_top">#16243F</color>
+    <color name="glass_fill_center">#101B30</color>
+    <color name="glass_fill_bottom">#0C1526</color>
+    <color name="glass_stroke">#2A3A5C</color>
+    <color name="glass_stroke_soft">#1E2C47</color>
+    <color name="glass_highlight">#5B7BB0</color>
+    <color name="glass_accent">#00D8FF</color>
+    <color name="glass_accent_sheen">#4DFBFF</color>
+    <color name="glass_accent_deep">#0098C0</color>
+    <color name="glass_text">#EAF2FF</color>
+    <color name="glass_text_sub">#A9B8D6</color>
+    <color name="glass_text_dim">#6E7E9E</color>
+    <color name="glass_text_on_accent">#04121F</color>
+    <color name="glass_accent_on">#04121F</color>
+    <color name="glass_chip">#1A2438</color>
+    <color name="glass_surface">#101B30</color>
+    <color name="glass_accent_soft">#0E2436</color>
 </resources>
