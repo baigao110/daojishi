@@ -9,5 +9,5 @@
     android:paddingEnd="10dp"
     android:ellipsize="end"
     android:maxLines="1"
-    android:textColor="#2B3144"
+    android:textColor="#EAF2FF"
     android:textSize="15sp" />
