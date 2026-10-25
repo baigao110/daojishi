@@ -182,15 +182,10 @@ class FloatingView(
         }
     }
 
-    /** v177：华都云境悦府购买正计时的「暂停 / 开始」按钮：仅该内置项可见，文案随暂停状态翻转。 */
+    /** 华都云境悦府购买正计时的「暂停 / 开始」按钮已随该功能删除（不可找回），永久隐藏。 */
     private fun applyPauseBtn() {
         try {
-            if (data.builtIn == BuiltIn.HUADU_BUY) {
-                pauseBtn.visibility = View.VISIBLE
-                pauseBtn.text = if (data.paused) "开始" else "暂停"
-            } else {
-                pauseBtn.visibility = View.GONE
-            }
+            pauseBtn.visibility = View.GONE
         } catch (e: Throwable) {
             Log.w(TAG, "applyPauseBtn: ${e.message}")
         }
