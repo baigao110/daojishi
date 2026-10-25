@@ -203,21 +203,21 @@ class MedicineCalendarActivity : Activity() {
 
         when {
             isTaken -> {
-                tv.background = bubble(0xFF4A6CF7.toInt(), 0)
-                tv.setTextColor(0xFF2B3144.toInt())
+                tv.background = bubble(0xFF00D8FF.toInt(), 0)
+                tv.setTextColor(0xFFEAF2FF.toInt())
             }
             isFuture -> {
                 tv.background = bubble(0x1AFFFFFF, 0)
-                tv.setTextColor(0xFF55607A.toInt())
+                tv.setTextColor(0xFFA9B8D6.toInt())
             }
             isToday -> {
-                tv.background = bubble(0x00000000, 0xFF4A6CF7.toInt())
-                tv.setTextColor(0xFF4A6CF7.toInt())
+                tv.background = bubble(0x00000000, 0xFF00D8FF.toInt())
+                tv.setTextColor(0xFF00D8FF.toInt())
             }
             else -> {
                 // 已经过去却没记录：淡红底，一眼看出漏了
                 tv.background = bubble(0x3CFF5A6E.toInt(), 0)
-                tv.setTextColor(0xFFC0506A.toInt())
+                tv.setTextColor(0xFFFF6E8A.toInt())
             }
         }
         val lp = FrameLayout.LayoutParams(dp(34), dp(34))
@@ -281,7 +281,7 @@ class MedicineCalendarActivity : Activity() {
             val label = if (dayKey == todayKey) "$dayKey（今天 $w）" else "$dayKey（$w）"
             val head = TextView(this)
             head.text = "$label：已吃药 ${events.size} 次"
-            head.setTextColor(0xFF4A6CF7.toInt())
+            head.setTextColor(0xFF00D8FF.toInt())
             head.textSize = 14f
             head.setTypeface(null, Typeface.BOLD)
             head.setPadding(0, dp(8), 0, dp(4))
@@ -297,7 +297,7 @@ class MedicineCalendarActivity : Activity() {
                 val med = if (ev.medName.isNotEmpty()) ev.medName else "（未指定药名）"
                 val info = TextView(this)
                 info.text = "· $med  ${MedicineReminder.formatTakeEvent(ev.ts)}"
-                info.setTextColor(0xFF2B3144.toInt())
+                info.setTextColor(0xFFEAF2FF.toInt())
                 info.textSize = 13f
                 info.layoutParams = LinearLayout.LayoutParams(
                     0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f
@@ -306,7 +306,7 @@ class MedicineCalendarActivity : Activity() {
                 val del = Button(this)
                 del.text = "×"
                 del.textSize = 16f
-                del.setTextColor(0xFF2B3144.toInt())
+                del.setTextColor(0xFFEAF2FF.toInt())
                 del.setBackgroundResource(R.drawable.circle_btn)
                 val dlp = LinearLayout.LayoutParams(dp(30), dp(30))
                 dlp.leftMargin = dp(6)
@@ -352,7 +352,7 @@ class MedicineCalendarActivity : Activity() {
             ) { host ->
                 val tv = TextView(this).apply {
                     text = "不要重复吃药哦！今天已经记了 ${count} 次，确定还要再记一笔吗？"
-                    setTextColor(0xFF2B3144.toInt())
+                    setTextColor(0xFFEAF2FF.toInt())
                     textSize = 14f
                     setShadowLayer(2f, 0f, 1f, 0xCC000000.toInt())
                     layoutParams = LinearLayout.LayoutParams(
@@ -382,7 +382,7 @@ class MedicineCalendarActivity : Activity() {
         ) { host ->
             val tv = TextView(this).apply {
                 text = "确定要清空全部吃药记录吗？清空后没法恢复哦（当天「已吃」标记也会一起去掉）。"
-                setTextColor(0xFF2B3144.toInt())
+                setTextColor(0xFFEAF2FF.toInt())
                 textSize = 14f
                 setShadowLayer(2f, 0f, 1f, 0xCC000000.toInt())
                 layoutParams = LinearLayout.LayoutParams(
@@ -401,7 +401,7 @@ class MedicineCalendarActivity : Activity() {
         b.text = text
         b.textSize = textSize
         b.setTypeface(null, Typeface.BOLD)
-        b.setTextColor(0xFF2B3144.toInt())
+        b.setTextColor(0xFFEAF2FF.toInt())
         b.setBackgroundResource(R.drawable.circle_btn)
         // 自定义背景必须清掉系统 Button 默认的内边距 / 最小宽度，否则窄按钮里的文字会被裁掉。
         b.isAllCaps = false
@@ -441,7 +441,7 @@ class MedicineCalendarActivity : Activity() {
         ) { host ->
             val tv = TextView(this).apply {
                 text = msg
-                setTextColor(0xFF2B3144.toInt()); textSize = 14f
+                setTextColor(0xFFEAF2FF.toInt()); textSize = 14f
                 setPadding(dp(4), dp(2), dp(4), dp(2))
             }
             host.addView(tv)
@@ -474,12 +474,12 @@ class MedicineCalendarActivity : Activity() {
         }
         val quickTitle = TextView(act).apply {
             text = "🕒 快速选择（点药名即选，× 可单个删除）"
-            setTextColor(0xFF3A56D4.toInt()); textSize = 12f
+            setTextColor(0xFF0098C0.toInt()); textSize = 12f
             setPadding(dp(6), dp(8), dp(4), dp(2))
         }
         val quickHint = TextView(act).apply {
             text = "还没有常用项——选过药会自动出现在这里，方便下次快速点选"
-            setTextColor(0xFF707A8C.toInt()); textSize = 12f
+            setTextColor(0xFF8A9AB8.toInt()); textSize = 12f
             setPadding(dp(8), dp(4), dp(4), dp(4))
         }
 
@@ -499,8 +499,8 @@ class MedicineCalendarActivity : Activity() {
         val edit = EditText(act).apply {
             hint = "输入药名搜索（如「阿」）"
             setBackgroundResource(R.drawable.field_bg)
-            setTextColor(0xFF2B3144.toInt())
-            setHintTextColor(0xFF9AA1B2.toInt())
+            setTextColor(0xFFEAF2FF.toInt())
+            setHintTextColor(0xFFA9B8D6.toInt())
             setPadding(dp(12), dp(12), dp(12), dp(12))
             textSize = 15f
             layoutParams = LinearLayout.LayoutParams(
@@ -540,14 +540,14 @@ class MedicineCalendarActivity : Activity() {
                 }
                 val nameTv = TextView(act).apply {
                     text = qn
-                    setTextColor(0xFF2B3144.toInt()); textSize = 14f
+                    setTextColor(0xFFEAF2FF.toInt()); textSize = 14f
                     setPadding(dp(2), 0, dp(6), 0)
                 }
                 val x = Button(act).apply {
                     text = "×"
                     textSize = 15f
                     setTypeface(null, Typeface.BOLD)
-                    setTextColor(0xFF2B3144.toInt())
+                    setTextColor(0xFFEAF2FF.toInt())
                     setBackgroundResource(R.drawable.circle_btn)
                     isAllCaps = false
                     minWidth = 0; minimumWidth = 0; minHeight = 0; minimumHeight = 0
@@ -590,7 +590,7 @@ class MedicineCalendarActivity : Activity() {
                 } else {
                     val t = TextView(act).apply {
                         text = if (all.isEmpty()) "还没有常用项，直接输入药名即可" else "没有匹配「$q2」的药名"
-                        setTextColor(0xFF707A8C.toInt())
+                        setTextColor(0xFF8A9AB8.toInt())
                         textSize = 13f
                         setPadding(0, dp(8), 0, dp(8))
                     }
@@ -600,7 +600,7 @@ class MedicineCalendarActivity : Activity() {
                 filtered.forEach { name ->
                     val item = TextView(act).apply {
                         text = name
-                        setTextColor(0xFF2B3144.toInt())
+                        setTextColor(0xFFEAF2FF.toInt())
                         textSize = 15f
                         setPadding(dp(10), dp(12), dp(10), dp(12))
                         background = pressBg()
@@ -658,8 +658,8 @@ class MedicineCalendarActivity : Activity() {
         val edit = EditText(this).apply {
             hint = "输入药名（如 阿司匹林）"
             setBackgroundResource(R.drawable.field_bg)
-            setTextColor(0xFF2B3144.toInt())
-            setHintTextColor(0xFF9AA1B2.toInt())
+            setTextColor(0xFFEAF2FF.toInt())
+            setHintTextColor(0xFFA9B8D6.toInt())
             setPadding(dp(12), dp(12), dp(12), dp(12))
             textSize = 15f
             layoutParams = LinearLayout.LayoutParams(
