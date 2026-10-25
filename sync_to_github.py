@@ -239,7 +239,7 @@ def main():
     if counts["UPDATED"] == 0 and counts["NEW"] == 0 and counts["FAILED"] == 0:
         print("  => 源码已与 GitHub 完全同步")
 
-    note_line = "🗑️ 移除「药名库」功能：选药改为从「快速选择」常用项里挑（记录过 / 历史上吃过的药自动收集成常用项，横滑一览、点一下即选，每个可单独删），更轻更快；同步清理内置 2.1 万条药名库、国家药监局同步、导入 / 导出等相关代码与 assets，包体更小、打开更顺。版本 v1.0.0.63。"
+    note_line = "🗑️ 本版两处精简：① 移除「药名库」功能（选药改走「快速选择」常用项，更轻更快，包体更小）；② 彻底删除全部「华都云境悦府」倒计时（主档 + 12~24 日 + 购房正计时），不可找回——启动即清老数据、已不在恢复清单、重装也不再生成。版本 v1.0.0.63。"
     print(f"=== 2. 上传 APK 到 Release {tag} ===")
     create_release_if_missing(tag, note_line)
     upload_apk(tag, apk_name)
