@@ -89,13 +89,6 @@ class MainActivity : Activity() {
         BuiltIn.HUADU_22,  // 华都云境悦府22日倒计时（2026-10-22 00:00）
         BuiltIn.HUADU_23,  // 华都云境悦府23日倒计时（2026-10-23 00:00）
         BuiltIn.HUADU_24,  // 华都云境悦府24日倒计时（2026-10-24 00:00）
-        BuiltIn.HUADU_25,  // 华都云境悦府25日倒计时（2026-10-25 00:00）
-        BuiltIn.HUADU_26,  // 华都云境悦府26日倒计时（2026-10-26 00:00）
-        BuiltIn.HUADU_27,  // 华都云境悦府27日倒计时（2026-10-27 00:00）
-        BuiltIn.HUADU_28,  // 华都云境悦府28日星期三倒计时（2026-10-28 00:00）
-        BuiltIn.HUADU_29,  // 华都云境悦府29日倒计时（2026-10-29 00:00）
-        BuiltIn.HUADU_30,  // 华都云境悦府30日倒计时（2026-10-30 00:00）
-        BuiltIn.HUADU_31,  // 华都云境悦府31日倒计时（2026-10-31 00:00）
         BuiltIn.HUADU, BuiltIn.GTA6,
         BuiltIn.HUADU_BUY,  // v177：华都云境悦府购买正计时（正计时）
         BuiltIn.YEAR  // v165：今年倒计时
@@ -121,13 +114,6 @@ class MainActivity : Activity() {
         BuiltIn.HUADU_22 to "距离华都云境悦府22日（2026-10-22 00:00）",
         BuiltIn.HUADU_23 to "距离华都云境悦府23日（2026-10-23 00:00）",
         BuiltIn.HUADU_24 to "距离华都云境悦府24日（2026-10-24 00:00）",
-        BuiltIn.HUADU_25 to "距离华都云境悦府25日（2026-10-25 00:00）",
-        BuiltIn.HUADU_26 to "距离华都云境悦府26日（2026-10-26 00:00）",
-        BuiltIn.HUADU_27 to "距离华都云境悦府27日（2026-10-27 00:00）",
-        BuiltIn.HUADU_28 to "距离华都云境悦府28日（2026-10-28 00:00）",
-        BuiltIn.HUADU_29 to "距离华都云境悦府29日（2026-10-29 00:00）",
-        BuiltIn.HUADU_30 to "距离华都云境悦府30日（2026-10-30 00:00）",
-        BuiltIn.HUADU_31 to "距离华都云境悦府31日（2026-10-31 00:00）",
         BuiltIn.HUADU_12 to "距离华都云境悦府12日（2026-10-12 00:00）",
         BuiltIn.HUADU_13 to "距离华都云境悦府13日（2026-10-13 00:00）",
         BuiltIn.HUADU_14 to "距离华都云境悦府14日（2026-10-14 00:00）",
@@ -249,6 +235,8 @@ class MainActivity : Activity() {
         dropRetiredCentury()
         // ⚠️ v154：v151 那批 29 个周期滚动档整体下线，老数据里的条目与快照一并清掉
         dropRetiredSteps()
+        // ⚠️ 本轮：华都云境悦府 25~31 日倒计时（含 28 日星期三）永久下线、不可找回
+        purgeHUADU25to31()
         // 华都云境悦府14日倒计时 → 华都云境悦府14日星期三倒计时（用户已建的该内置项同步改名，除非用户自己改过名）
         var renamed14 = false
         for (c in data) {
@@ -300,6 +288,28 @@ class MainActivity : Activity() {
      * 已经选不中的那一批。内置类型常量 13~41 照旧留着不回收（见 BuiltIn），
      * 万一哪天再挂回来，老数据认得出来。
      */
+    /**
+     * 本轮：华都云境悦府 25~31 日倒计时（含 28 日星期三，内置类型 54 / 58 / 59 / 60 / 61 / 62 / 63）
+     * 永久下线、不可找回 —— 启动即把老数据里残留的这几条连同它们的备份快照一起清掉；
+     * 它们已不在 defaultBuiltInOrder / 恢复内置清单里，重装 App 也不会再生成。
+     */
+    private fun purgeHUADU25to31() {
+        val gone = setOf(54, 58, 59, 60, 61, 62, 63)  // 华都云境悦府 28 / 25 / 26 / 27 / 29 / 30 / 31 日倒计时
+        val stale = data.filter { it.builtIn in gone }
+        if (stale.isNotEmpty()) {
+            val staleIds = stale.map { it.id }.toHashSet()
+            data.removeAll { c -> c.id in staleIds }
+            CountdownStore.save(this, data)
+            rebuildList()
+            syncService()
+        }
+        for (key in removedPrefs.all.keys.toList()) {
+            if (!key.startsWith("backup_")) continue
+            val type = key.removePrefix("backup_").substringBefore("_").toIntOrNull() ?: continue
+            if (type in gone) removedPrefs.edit().remove(key).apply()
+        }
+    }
+
     private fun dropRetiredSteps() {
         val stale = data.filter { it.builtIn in BuiltIn.MIN_2..BuiltIn.HOUR_23 }
         if (stale.isEmpty()) {
@@ -375,7 +385,7 @@ class MainActivity : Activity() {
                 remark = remark,
                 builtIn = type,
                 // 当月 / 华都云境悦府 / GTA6 的「标准模式」就是「天时分秒模式」（与记录读取时的数据升级保持一致）
-                displayMode = if (type in intArrayOf(BuiltIn.MONTH, BuiltIn.HUADU, BuiltIn.GTA6, BuiltIn.HUADU_20, BuiltIn.HUADU_21, BuiltIn.HUADU_28, BuiltIn.HUADU_15, BuiltIn.HUADU_16, BuiltIn.HUADU_17, BuiltIn.HUADU_18, BuiltIn.HUADU_19, BuiltIn.HUADU_12, BuiltIn.HUADU_13, BuiltIn.HUADU_14, BuiltIn.HUADU_22, BuiltIn.HUADU_23, BuiltIn.HUADU_24, BuiltIn.HUADU_25, BuiltIn.HUADU_26, BuiltIn.HUADU_27, BuiltIn.HUADU_29, BuiltIn.HUADU_30, BuiltIn.HUADU_31, BuiltIn.HUADU_BUY)) {
+                displayMode = if (type in intArrayOf(BuiltIn.MONTH, BuiltIn.HUADU, BuiltIn.GTA6, BuiltIn.HUADU_20, BuiltIn.HUADU_21, BuiltIn.HUADU_15, BuiltIn.HUADU_16, BuiltIn.HUADU_17, BuiltIn.HUADU_18, BuiltIn.HUADU_19, BuiltIn.HUADU_12, BuiltIn.HUADU_13, BuiltIn.HUADU_14, BuiltIn.HUADU_22, BuiltIn.HUADU_23, BuiltIn.HUADU_24, BuiltIn.HUADU_BUY)) {
                     CountdownFormatter.MODE_DAY_HMS
                 } else 0,
                 isVisible = false   // 默认不强制弹出悬浮窗，可在列表中点「显示」
