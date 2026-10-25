@@ -91,20 +91,12 @@ object BuiltIn {
     const val HUADU_12 = 50
     const val HUADU_13 = 51
     const val HUADU_14 = 52
-    // ---- 本轮新加的「华都云境悦府21日 / 28日星期三倒计时」：固定目标 2026-10-21 / 28 00:00:00，风格与 GTA6 一致（日子定死、不滚动、可改名/色/动画/备注/提示音），全部 11 显示模式可用，悬浮窗同步；归零不自动删（GTA6 风格） ----
+    // ---- 本轮新加的「华都云境悦府21日星期三倒计时」：固定目标 2026-10-21 00:00:00，风格与 GTA6 一致（日子定死、不滚动、可改名/色/动画/备注/提示音），全部 11 显示模式可用，悬浮窗同步；归零不自动删（GTA6 风格） ----
     const val HUADU_21 = 53
-    const val HUADU_28 = 54
-    // ---- 本轮新加的「华都云境悦府22/23/24/25/26/27日倒计时」：固定目标 2026-10-22/23/24/25/26/27 00:00:00，风格与华都云境悦府15日倒计时一致（日子定死、不滚动、可改名/色/动画/备注/提示音），全部 11 显示模式可用，悬浮窗同步，归零即删 ----
+    // ---- 本轮新加的「华都云境悦府22/23/24日倒计时」：固定目标 2026-10-22/23/24 00:00:00，风格与华都云境悦府15日倒计时一致（日子定死、不滚动、可改名/色/动画/备注/提示音），全部 11 显示模式可用，悬浮窗同步，归零即删 ----
     const val HUADU_22 = 55
     const val HUADU_23 = 56
     const val HUADU_24 = 57
-    const val HUADU_25 = 58
-    const val HUADU_26 = 59
-    const val HUADU_27 = 60
-    // ---- 本轮新加的「华都云境悦府29/30/31日倒计时」：固定目标 2026-10-29/30/31 00:00:00，风格与华都云境悦府15日倒计时一致（日子定死、不滚动、可改名/色/动画/备注/提示音），全部 11 显示模式可用，悬浮窗同步，归零即删 ----
-    const val HUADU_29 = 61
-    const val HUADU_30 = 62
-    const val HUADU_31 = 63
 
     /**
      * 固定目标时间的内置项（不随日期滚动）：返回 epoch 毫秒；滚动型内置项返回 null。
@@ -127,16 +119,9 @@ object BuiltIn {
             HUADU_13 -> cal.set(2026, Calendar.OCTOBER, 13, 0, 0, 0)
             HUADU_14 -> cal.set(2026, Calendar.OCTOBER, 14, 0, 0, 0)
             HUADU_21 -> cal.set(2026, Calendar.OCTOBER, 21, 0, 0, 0)
-            HUADU_28 -> cal.set(2026, Calendar.OCTOBER, 28, 0, 0, 0)
             HUADU_22 -> cal.set(2026, Calendar.OCTOBER, 22, 0, 0, 0)
             HUADU_23 -> cal.set(2026, Calendar.OCTOBER, 23, 0, 0, 0)
             HUADU_24 -> cal.set(2026, Calendar.OCTOBER, 24, 0, 0, 0)
-            HUADU_25 -> cal.set(2026, Calendar.OCTOBER, 25, 0, 0, 0)
-            HUADU_26 -> cal.set(2026, Calendar.OCTOBER, 26, 0, 0, 0)
-            HUADU_27 -> cal.set(2026, Calendar.OCTOBER, 27, 0, 0, 0)
-            HUADU_29 -> cal.set(2026, Calendar.OCTOBER, 29, 0, 0, 0)
-            HUADU_30 -> cal.set(2026, Calendar.OCTOBER, 30, 0, 0, 0)
-            HUADU_31 -> cal.set(2026, Calendar.OCTOBER, 31, 0, 0, 0)
             HUADU_BUY -> cal.set(2025, Calendar.APRIL, 20, 17, 30, 0)
             else -> return null
         }
@@ -152,9 +137,8 @@ object BuiltIn {
         type != NONE && type != HUADU && type != GTA6 && type != HUADU_20 && type != HUADU_BUY &&
         type != HUADU_15 && type != HUADU_16 && type != HUADU_17 && type != HUADU_18 && type != HUADU_19 &&
         type != HUADU_12 && type != HUADU_13 && type != HUADU_14 &&
-        type != HUADU_21 && type != HUADU_28 &&
-        type != HUADU_22 && type != HUADU_23 && type != HUADU_24 && type != HUADU_25 && type != HUADU_26 && type != HUADU_27 &&
-        type != HUADU_29 && type != HUADU_30 && type != HUADU_31
+        type != HUADU_21 &&
+        type != HUADU_22 && type != HUADU_23 && type != HUADU_24
 
     /** 是否为「正计时」内置项（华都云境悦府购买正计时）：方向与普通倒计时相反，显示「自起点至今已过去多久」。 */
     fun isCountUp(type: Int): Boolean = type == HUADU_BUY
@@ -196,16 +180,9 @@ object BuiltIn {
         HUADU_13 -> "华都云境悦府13日倒计时"
         HUADU_14 -> "华都云境悦府14日星期三倒计时"
         HUADU_21 -> "华都云境悦府21日星期三倒计时"
-        HUADU_28 -> "华都云境悦府28日星期三倒计时"
         HUADU_22 -> "华都云境悦府22日倒计时"
         HUADU_23 -> "华都云境悦府23日倒计时"
         HUADU_24 -> "华都云境悦府24日倒计时"
-        HUADU_25 -> "华都云境悦府25日倒计时"
-        HUADU_26 -> "华都云境悦府26日倒计时"
-        HUADU_27 -> "华都云境悦府27日倒计时"
-        HUADU_29 -> "华都云境悦府29日倒计时"
-        HUADU_30 -> "华都云境悦府30日倒计时"
-        HUADU_31 -> "华都云境悦府31日倒计时"
         WEEK -> "每周倒计时"
         HOUR -> "每小时倒计时"
         HALF_HOUR -> "每半小时倒计时"
@@ -716,7 +693,7 @@ object CountdownFormatter {
             // 与每 5 / 10 分钟、每半小时、每 2~9 分钟一个写法；
             // 当日倒计时（最多 24 小时）「时」有数，仍归上面那一档走「时分秒」。
             if (mode == 0 || mode == 4) MODE_MINUTE_SECOND else mode
-        BuiltIn.WEEK, BuiltIn.MONTH, BuiltIn.HUADU, BuiltIn.GTA6, BuiltIn.HUADU_20, BuiltIn.HUADU_21, BuiltIn.HUADU_28, BuiltIn.HUADU_15, BuiltIn.HUADU_16, BuiltIn.HUADU_17, BuiltIn.HUADU_18, BuiltIn.HUADU_19, BuiltIn.HUADU_12, BuiltIn.HUADU_13, BuiltIn.HUADU_14, BuiltIn.HUADU_22, BuiltIn.HUADU_23, BuiltIn.HUADU_24, BuiltIn.HUADU_25, BuiltIn.HUADU_26, BuiltIn.HUADU_27, BuiltIn.HUADU_29, BuiltIn.HUADU_30, BuiltIn.HUADU_31, BuiltIn.YEAR, BuiltIn.HUADU_BUY ->
+        BuiltIn.WEEK, BuiltIn.MONTH, BuiltIn.HUADU, BuiltIn.GTA6, BuiltIn.HUADU_20, BuiltIn.HUADU_21, BuiltIn.HUADU_15, BuiltIn.HUADU_16, BuiltIn.HUADU_17, BuiltIn.HUADU_18, BuiltIn.HUADU_19, BuiltIn.HUADU_12, BuiltIn.HUADU_13, BuiltIn.HUADU_14, BuiltIn.HUADU_22, BuiltIn.HUADU_23, BuiltIn.HUADU_24, BuiltIn.YEAR, BuiltIn.HUADU_BUY ->
             // 标准模式 → 天时分秒模式；v160 起新加的「周模式 9 / 周天时分秒模式 10」原样放行
             if (mode == 0) 6 else mode
         else -> {
@@ -770,9 +747,8 @@ object CountdownFormatter {
             builtIn != BuiltIn.HUADU_17 && builtIn != BuiltIn.HUADU_18 &&
             builtIn != BuiltIn.HUADU_19 &&  // 本轮：华都云境悦府15~19日倒计时与 GTA6 同款（周那截有数）
             builtIn != BuiltIn.HUADU_12 && builtIn != BuiltIn.HUADU_13 && builtIn != BuiltIn.HUADU_14 &&  // 本轮：华都云境悦府12~14日倒计时与 GTA6 同款（周那截有数）
-            builtIn != BuiltIn.HUADU_21 && builtIn != BuiltIn.HUADU_28 &&  // 本轮：华都云境悦府21/28日星期三倒计时与 GTA6 同款（周那截有数）
-            builtIn != BuiltIn.HUADU_22 && builtIn != BuiltIn.HUADU_23 && builtIn != BuiltIn.HUADU_24 && builtIn != BuiltIn.HUADU_25 && builtIn != BuiltIn.HUADU_26 && builtIn != BuiltIn.HUADU_27 &&  // 本轮：华都云境悦府22~27日倒计时与 GTA6 同款（周那截有数）
-            builtIn != BuiltIn.HUADU_29 && builtIn != BuiltIn.HUADU_30 && builtIn != BuiltIn.HUADU_31 &&  // 本轮：华都云境悦府29~31日倒计时与 GTA6 同款（周那截有数）
+            builtIn != BuiltIn.HUADU_21 &&  // 本轮：华都云境悦府21日星期三倒计时与 GTA6 同款（周那截有数）
+            builtIn != BuiltIn.HUADU_22 && builtIn != BuiltIn.HUADU_23 && builtIn != BuiltIn.HUADU_24 &&  // 本轮：华都云境悦府22~24日倒计时与 GTA6 同款（周那截有数）
             builtIn != BuiltIn.NONE &&
             builtIn != BuiltIn.YEAR &&  // v165：今年最长 365 天，「周」那截有数，与每月那档同待遇
             builtIn != BuiltIn.HUADU_BUY  // v177：正计时同款（周那截有数）
