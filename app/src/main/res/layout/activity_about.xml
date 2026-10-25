@@ -1,422 +1,422 @@
-<?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@drawable/glass_bg">
-
-    <!-- 液态玻璃背景层：模糊光斑 -->
-    <com.baigao.countdown.GlassBackdrop
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
-
-    <!-- 顶部返回栏 -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="12dp">
-
-        <TextView
-            android:id="@+id/backBtn"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="‹ 返回"
-            android:textColor="#00FFFF"
-            android:textSize="16sp"
-            android:padding="4dp" />
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="关于"
-            android:textColor="#00FFFF"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:gravity="center"
-            android:layout_marginEnd="40dp" />
-    </LinearLayout>
-
-    <!-- 主体：中间靠上的放大图标 + 版本号 + 更新按钮 -->
-    <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:fillViewport="true">
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:gravity="center_horizontal"
-        android:paddingTop="90dp"
-        android:paddingBottom="24dp"
-        android:paddingStart="24dp"
-        android:paddingEnd="24dp">
-
-        <!-- 放大一点的倒计时图标（圆形底 + 时钟前景） -->
-        <FrameLayout
-            android:layout_width="150dp"
-            android:layout_height="150dp"
-            android:background="@drawable/about_icon_bg">
-
-            <ImageView
-                android:layout_width="112dp"
-                android:layout_height="112dp"
-                android:layout_gravity="center"
-                android:src="@drawable/ic_launcher_foreground" />
-        </FrameLayout>
-
-        <TextView
-            android:id="@+id/versionTv"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="22dp"
-            android:text="版本 v1.0.0"
-            android:textColor="#FFFFFF"
-            android:textSize="18sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/githubLinkTv"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:gravity="center"
-            android:text="项目主页 · github.com/baigao110/daojishi"
-            android:textColor="#00FFFF"
-            android:textSize="13sp" />
-
-        <LinearLayout
-            android:layout_width="290dp"
-            android:layout_height="52dp"
-            android:layout_marginTop="26dp"
-            android:orientation="horizontal">
-
-            <Button
-                android:id="@+id/updateBtn"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:text="检查更新"
-                android:textSize="15sp"
-                android:textStyle="bold"
-                android:textColor="#001018"
-                android:background="@drawable/circle_btn" />
-
-            <Button
-                android:id="@+id/helpBtn"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:layout_marginStart="10dp"
-                android:text="说明"
-                android:textSize="15sp"
-                android:textStyle="bold"
-                android:textColor="#001018"
-                android:background="@drawable/circle_btn" />
-
-            <Button
-                android:id="@+id/changelogBtn"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:layout_marginStart="10dp"
-                android:text="更新日志"
-                android:textSize="15sp"
-                android:textStyle="bold"
-                android:textColor="#001018"
-                android:background="@drawable/circle_btn" />
-        </LinearLayout>
-
-        <Button
-            android:id="@+id/disclaimerBtn"
-            android:layout_width="260dp"
-            android:layout_height="46dp"
-            android:layout_marginTop="12dp"
-            android:text="免责声明"
-            android:textSize="15sp"
-            android:textStyle="bold"
-            android:textColor="#001018"
-            android:background="@drawable/circle_btn" />
-
-        <TextView
-            android:id="@+id/statusTv"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:gravity="center"
-            android:textColor="#FFA8B3CC"
-            android:textSize="14sp"
-            android:text="点「检查更新」就能看看有没有新版本哦" />
-
-        <LinearLayout
-            android:layout_width="260dp"
-            android:layout_height="52dp"
-            android:layout_marginTop="14dp"
-            android:orientation="horizontal">
-
-            <Button
-                android:id="@+id/notifyBtn"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:text="开启通知"
-                android:textSize="15sp"
-                android:textStyle="bold"
-                android:textColor="#001018"
-                android:background="@drawable/circle_btn" />
-
-            <Button
-                android:id="@+id/testBtn"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:layout_marginStart="12dp"
-                android:text="测试通知"
-                android:textSize="15sp"
-                android:textStyle="bold"
-                android:textColor="#001018"
-                android:background="@drawable/circle_btn" />
-        </LinearLayout>
-
-        <Button
-            android:id="@+id/batteryBtn"
-            android:layout_width="260dp"
-            android:layout_height="46dp"
-            android:layout_marginTop="12dp"
-            android:text="允许后台运行（关掉电池优化）"
-            android:textSize="13sp"
-            android:textStyle="bold"
-            android:textColor="#001018"
-            android:background="@drawable/circle_btn" />
-
-        <Button
-            android:id="@+id/notifyCheckBtn"
-            android:layout_width="260dp"
-            android:layout_height="46dp"
-            android:layout_marginTop="10dp"
-            android:text="通知小体检（查查为啥收不到）"
-            android:textSize="13sp"
-            android:textStyle="bold"
-            android:textColor="#001018"
-            android:background="@drawable/circle_btn" />
-
-        <!-- 屏幕常亮：拆成「UI 界面常亮」与「悬浮框常亮」两个左右滑动开关 -->
-        <LinearLayout
-            style="@style/SettingRow"
-            android:layout_marginTop="12dp">
-
-            <TextView
-                style="@style/SettingLabel"
-                android:text="UI 界面常亮" />
-
-            <Switch
-                android:id="@+id/uiKeepSwitch"
-                style="@style/GlassSwitch"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
-        </LinearLayout>
-
-        <LinearLayout
-            style="@style/SettingRow"
-            android:layout_marginTop="8dp">
-
-            <TextView
-                style="@style/SettingLabel"
-                android:text="悬浮框常亮" />
-
-            <Switch
-                android:id="@+id/floatKeepSwitch"
-                style="@style/GlassSwitch"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
-        </LinearLayout>
-
-        <TextView
-            android:id="@+id/keepDescTv"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:gravity="center"
-            android:lineSpacingExtra="3dp"
-            android:textColor="#FFEAF6FF"
-            android:textSize="12sp"
-            android:text="UI 界面常亮：打开 App 时屏幕一直亮着、不锁屏。\n悬浮框常亮：悬浮倒计时展开时屏幕保持常亮；关掉或收缩成小条时跟随手机系统的熄屏时间。" />
-
-        <!-- 锁屏 / 通知栏倒计时：以常驻通知的形式动态显示在锁屏通知栏里 -->
-        <LinearLayout
-            style="@style/SettingRow"
-            android:layout_marginTop="8dp">
-
-            <TextView
-                style="@style/SettingLabel"
-                android:text="锁屏通知显示" />
-
-            <Switch
-                android:id="@+id/lockNotifySwitch"
-                style="@style/GlassSwitch"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
-        </LinearLayout>
-
-        <TextView
-            android:id="@+id/lockNotifyDescTv"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:gravity="center"
-            android:lineSpacingExtra="3dp"
-            android:textColor="#FFEAF6FF"
-            android:textSize="12sp"
-            android:text="" />
-
-        <!-- 锁屏通知排障入口：国内 ROM 的「锁屏显示」开关藏在应用信息里，一键带过去 -->
-        <Button
-            android:id="@+id/lockNotifyOpenBtn"
-            android:layout_width="260dp"
-            android:layout_height="46dp"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginTop="8dp"
-            android:text="锁屏上看不到？点我打开锁屏通知设置"
-            android:textSize="13sp"
-            android:textStyle="bold"
-            android:textColor="#001018"
-            android:background="@drawable/circle_btn" />
-
-        <!-- 锁屏通知自检：一键发一条真实的锁屏通知，锁屏上立刻能看出通没通 -->
-        <Button
-            android:id="@+id/lockTestBtn"
-            android:layout_width="260dp"
-            android:layout_height="46dp"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginTop="10dp"
-            android:text="测试锁屏通知（发一条去锁屏看）"
-            android:textSize="13sp"
-            android:textStyle="bold"
-            android:textColor="#001018"
-            android:background="@drawable/circle_btn" />
-
-        <!-- 锁屏通知状态：开关 / 有几条在走秒 / 刷新服务是不是在跑 -->
-        <TextView
-            android:id="@+id/lockStateTv"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:gravity="center"
-            android:lineSpacingExtra="3dp"
-            android:textColor="#FFEAF6FF"
-            android:textSize="12sp"
-            android:text="" />
-
-        <!-- 锁屏通知常亮：锁屏上还有倒计时时，屏幕就一直亮着（关掉恢复手机熄屏时间） -->
-        <LinearLayout
-            style="@style/SettingRow"
-            android:layout_marginTop="12dp">
-
-            <TextView
-                style="@style/SettingLabel"
-                android:text="锁屏通知常亮" />
-
-            <Switch
-                android:id="@+id/lockKeepSwitch"
-                style="@style/GlassSwitch"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
-        </LinearLayout>
-
-        <TextView
-            android:id="@+id/lockKeepDescTv"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:gravity="center"
-            android:lineSpacingExtra="3dp"
-            android:textColor="#FFEAF6FF"
-            android:textSize="12sp"
-            android:text="" />
-
-        <!-- 更新提示方式：多选项改为下拉框选择 -->
-        <LinearLayout
-            style="@style/SettingRow"
-            android:layout_marginTop="12dp">
-
-            <TextView
-                style="@style/SettingLabel"
-                android:text="更新提示方式" />
-
-            <Spinner
-                android:id="@+id/updateModeSpinner"
-                style="@style/GlassSpinner"
-                android:layout_width="168dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp" />
-        </LinearLayout>
-
-        <TextView
-            android:id="@+id/updateModeDescTv"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:gravity="center"
-            android:lineSpacingExtra="3dp"
-            android:textColor="#FFEAF6FF"
-            android:textSize="12sp"
-            android:text="" />
-
-        <!-- 备注时间制式：24 小时制 / 12 小时制（只影响备注文案里的钟点说法） -->
-        <LinearLayout
-            style="@style/SettingRow"
-            android:layout_marginTop="12dp">
-
-            <TextView
-                style="@style/SettingLabel"
-                android:text="备注时间制式" />
-
-            <Spinner
-                android:id="@+id/timeFormatSpinner"
-                style="@style/GlassSpinner"
-                android:layout_width="150dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp" />
-        </LinearLayout>
-
-        <TextView
-            android:id="@+id/timeFormatDescTv"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:gravity="center"
-            android:lineSpacingExtra="3dp"
-            android:textColor="#FFEAF6FF"
-            android:textSize="12sp"
-            android:text="" />
-
-        <TextView
-            android:id="@+id/checkStateTv"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:gravity="center"
-            android:lineSpacingExtra="3dp"
-            android:textColor="#FFA8B3CC"
-            android:textSize="12sp"
-            android:text="后台检查：还没跑过" />
-
-
-
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:gravity="center"
-        android:lineSpacingExtra="4dp"
-        android:textColor="#FFA8B3CC"
-            android:textSize="12sp"
-            android:text="已知小限制：悬浮窗在系统「设置」前台时会被临时藏起来（Android 安全机制，应用没法盖住），回到本应用会自动恢复哦。\n若部分品牌手机在任意界面都不显示，请在系统设置里为本应用开启「显示在其他应用上层」，并在品牌权限管理里开启「后台弹出界面 / 显示弹窗」。" />
-
-    </LinearLayout>
-
-    </ScrollView>
-
-</FrameLayout>
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/glass_bg">
+
+    <!-- 液态玻璃背景层：模糊光斑 -->
+    <com.baigao.countdown.GlassBackdrop
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- 顶部返回栏 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="12dp">
+
+        <TextView
+            android:id="@+id/backBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="‹ 返回"
+            android:textColor="#4A6CF7"
+            android:textSize="16sp"
+            android:padding="4dp" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="关于"
+            android:textColor="#4A6CF7"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:layout_marginEnd="40dp" />
+    </LinearLayout>
+
+    <!-- 主体：中间靠上的放大图标 + 版本号 + 更新按钮 -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center_horizontal"
+        android:paddingTop="90dp"
+        android:paddingBottom="24dp"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp">
+
+        <!-- 放大一点的倒计时图标（圆形底 + 时钟前景） -->
+        <FrameLayout
+            android:layout_width="150dp"
+            android:layout_height="150dp"
+            android:background="@drawable/about_icon_bg">
+
+            <ImageView
+                android:layout_width="112dp"
+                android:layout_height="112dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_launcher_foreground" />
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/versionTv"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="22dp"
+            android:text="版本 v1.0.0"
+            android:textColor="#2B3144"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/githubLinkTv"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            android:text="项目主页 · github.com/baigao110/daojishi"
+            android:textColor="#4A6CF7"
+            android:textSize="13sp" />
+
+        <LinearLayout
+            android:layout_width="290dp"
+            android:layout_height="52dp"
+            android:layout_marginTop="26dp"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/updateBtn"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:text="检查更新"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:textColor="#001018"
+                android:background="@drawable/circle_btn" />
+
+            <Button
+                android:id="@+id/helpBtn"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:layout_marginStart="10dp"
+                android:text="说明"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:textColor="#001018"
+                android:background="@drawable/circle_btn" />
+
+            <Button
+                android:id="@+id/changelogBtn"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:layout_marginStart="10dp"
+                android:text="更新日志"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:textColor="#001018"
+                android:background="@drawable/circle_btn" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/disclaimerBtn"
+            android:layout_width="260dp"
+            android:layout_height="46dp"
+            android:layout_marginTop="12dp"
+            android:text="免责声明"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:textColor="#001018"
+            android:background="@drawable/circle_btn" />
+
+        <TextView
+            android:id="@+id/statusTv"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:gravity="center"
+            android:textColor="#707A8C"
+            android:textSize="14sp"
+            android:text="点「检查更新」就能看看有没有新版本哦" />
+
+        <LinearLayout
+            android:layout_width="260dp"
+            android:layout_height="52dp"
+            android:layout_marginTop="14dp"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/notifyBtn"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:text="开启通知"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:textColor="#001018"
+                android:background="@drawable/circle_btn" />
+
+            <Button
+                android:id="@+id/testBtn"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:text="测试通知"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:textColor="#001018"
+                android:background="@drawable/circle_btn" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/batteryBtn"
+            android:layout_width="260dp"
+            android:layout_height="46dp"
+            android:layout_marginTop="12dp"
+            android:text="允许后台运行（关掉电池优化）"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textColor="#001018"
+            android:background="@drawable/circle_btn" />
+
+        <Button
+            android:id="@+id/notifyCheckBtn"
+            android:layout_width="260dp"
+            android:layout_height="46dp"
+            android:layout_marginTop="10dp"
+            android:text="通知小体检（查查为啥收不到）"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textColor="#001018"
+            android:background="@drawable/circle_btn" />
+
+        <!-- 屏幕常亮：拆成「UI 界面常亮」与「悬浮框常亮」两个左右滑动开关 -->
+        <LinearLayout
+            style="@style/SettingRow"
+            android:layout_marginTop="12dp">
+
+            <TextView
+                style="@style/SettingLabel"
+                android:text="UI 界面常亮" />
+
+            <Switch
+                android:id="@+id/uiKeepSwitch"
+                style="@style/GlassSwitch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <LinearLayout
+            style="@style/SettingRow"
+            android:layout_marginTop="8dp">
+
+            <TextView
+                style="@style/SettingLabel"
+                android:text="悬浮框常亮" />
+
+            <Switch
+                android:id="@+id/floatKeepSwitch"
+                style="@style/GlassSwitch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/keepDescTv"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            android:lineSpacingExtra="3dp"
+            android:textColor="#2B3144"
+            android:textSize="12sp"
+            android:text="UI 界面常亮：打开 App 时屏幕一直亮着、不锁屏。\n悬浮框常亮：悬浮倒计时展开时屏幕保持常亮；关掉或收缩成小条时跟随手机系统的熄屏时间。" />
+
+        <!-- 锁屏 / 通知栏倒计时：以常驻通知的形式动态显示在锁屏通知栏里 -->
+        <LinearLayout
+            style="@style/SettingRow"
+            android:layout_marginTop="8dp">
+
+            <TextView
+                style="@style/SettingLabel"
+                android:text="锁屏通知显示" />
+
+            <Switch
+                android:id="@+id/lockNotifySwitch"
+                style="@style/GlassSwitch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/lockNotifyDescTv"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            android:lineSpacingExtra="3dp"
+            android:textColor="#2B3144"
+            android:textSize="12sp"
+            android:text="" />
+
+        <!-- 锁屏通知排障入口：国内 ROM 的「锁屏显示」开关藏在应用信息里，一键带过去 -->
+        <Button
+            android:id="@+id/lockNotifyOpenBtn"
+            android:layout_width="260dp"
+            android:layout_height="46dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="8dp"
+            android:text="锁屏上看不到？点我打开锁屏通知设置"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textColor="#001018"
+            android:background="@drawable/circle_btn" />
+
+        <!-- 锁屏通知自检：一键发一条真实的锁屏通知，锁屏上立刻能看出通没通 -->
+        <Button
+            android:id="@+id/lockTestBtn"
+            android:layout_width="260dp"
+            android:layout_height="46dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="10dp"
+            android:text="测试锁屏通知（发一条去锁屏看）"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textColor="#001018"
+            android:background="@drawable/circle_btn" />
+
+        <!-- 锁屏通知状态：开关 / 有几条在走秒 / 刷新服务是不是在跑 -->
+        <TextView
+            android:id="@+id/lockStateTv"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            android:lineSpacingExtra="3dp"
+            android:textColor="#2B3144"
+            android:textSize="12sp"
+            android:text="" />
+
+        <!-- 锁屏通知常亮：锁屏上还有倒计时时，屏幕就一直亮着（关掉恢复手机熄屏时间） -->
+        <LinearLayout
+            style="@style/SettingRow"
+            android:layout_marginTop="12dp">
+
+            <TextView
+                style="@style/SettingLabel"
+                android:text="锁屏通知常亮" />
+
+            <Switch
+                android:id="@+id/lockKeepSwitch"
+                style="@style/GlassSwitch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/lockKeepDescTv"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            android:lineSpacingExtra="3dp"
+            android:textColor="#2B3144"
+            android:textSize="12sp"
+            android:text="" />
+
+        <!-- 更新提示方式：多选项改为下拉框选择 -->
+        <LinearLayout
+            style="@style/SettingRow"
+            android:layout_marginTop="12dp">
+
+            <TextView
+                style="@style/SettingLabel"
+                android:text="更新提示方式" />
+
+            <Spinner
+                android:id="@+id/updateModeSpinner"
+                style="@style/GlassSpinner"
+                android:layout_width="168dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/updateModeDescTv"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            android:lineSpacingExtra="3dp"
+            android:textColor="#2B3144"
+            android:textSize="12sp"
+            android:text="" />
+
+        <!-- 备注时间制式：24 小时制 / 12 小时制（只影响备注文案里的钟点说法） -->
+        <LinearLayout
+            style="@style/SettingRow"
+            android:layout_marginTop="12dp">
+
+            <TextView
+                style="@style/SettingLabel"
+                android:text="备注时间制式" />
+
+            <Spinner
+                android:id="@+id/timeFormatSpinner"
+                style="@style/GlassSpinner"
+                android:layout_width="150dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/timeFormatDescTv"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            android:lineSpacingExtra="3dp"
+            android:textColor="#2B3144"
+            android:textSize="12sp"
+            android:text="" />
+
+        <TextView
+            android:id="@+id/checkStateTv"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:gravity="center"
+            android:lineSpacingExtra="3dp"
+            android:textColor="#707A8C"
+            android:textSize="12sp"
+            android:text="后台检查：还没跑过" />
+
+
+
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:gravity="center"
+        android:lineSpacingExtra="4dp"
+        android:textColor="#707A8C"
+            android:textSize="12sp"
+            android:text="已知小限制：悬浮窗在系统「设置」前台时会被临时藏起来（Android 安全机制，应用没法盖住），回到本应用会自动恢复哦。\n若部分品牌手机在任意界面都不显示，请在系统设置里为本应用开启「显示在其他应用上层」，并在品牌权限管理里开启「后台弹出界面 / 显示弹窗」。" />
+
+    </LinearLayout>
+
+    </ScrollView>
+
+</FrameLayout>
