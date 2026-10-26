@@ -253,14 +253,20 @@ class MainActivity : Activity() {
      * 万一哪天再挂回来，老数据认得出来。
      */
     /**
-     * 本轮：删除全部华都云境悦府「日期倒计时」——主档 HUADU=3、12~31 日 = 44~63（含 25~31 日），
-     * 不可找回：启动即把老数据里残留的这几条连同它们的备份快照一起清掉；它们已不在
-     * defaultBuiltInOrder / 恢复内置清单里，重装 App 也不会再生成。
+     * 本轮：删除全部华都云境悦府「日期倒计时」——无论它是内置（编号随历史版本变动：
+     * 主档 HUADU=3、12~31 日 = 44~63，早期版本还有 01~11 日落在其它编号上）还是用户自建
+     * （builtIn=0、名字仍带「华都云境悦府」前缀），凡名字以「华都云境悦府」开头且不是
+     * 「购买正计时」的一律清掉，不可找回；它们已不在 defaultBuiltInOrder / 恢复内置清单里，重装也不会再生成。
      * 注意：华都云境悦府「购买正计时」(HUADU_BUY=43) 按要求保留、不在此列。
      */
+    private val huaduGoneBuiltIns = setOf(3, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63)
+    private val HUADU_PREFIX = "华都云境悦府"
+    private val HUADU_BUY_TITLE = "华都云境悦府购买正计时"
     private fun purgeHuaduAll() {
-        val gone = setOf(3, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63)
-        val stale = data.filter { it.builtIn in gone }
+        val stale = data.filter { c ->
+            c.builtIn in huaduGoneBuiltIns ||
+            (c.title.startsWith(HUADU_PREFIX) && c.title != HUADU_BUY_TITLE)
+        }
         if (stale.isNotEmpty()) {
             val staleIds = stale.map { it.id }.toHashSet()
             data.removeAll { c -> c.id in staleIds }
@@ -271,7 +277,7 @@ class MainActivity : Activity() {
         for (key in removedPrefs.all.keys.toList()) {
             if (!key.startsWith("backup_")) continue
             val type = key.removePrefix("backup_").substringBefore("_").toIntOrNull() ?: continue
-            if (type in gone) removedPrefs.edit().remove(key).apply()
+            if (type in huaduGoneBuiltIns) removedPrefs.edit().remove(key).apply()
         }
     }
 
