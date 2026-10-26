@@ -78,7 +78,7 @@ object BuiltIn {
     const val HOUR_23 = 41   // 每23小时倒计时：目标为下一个 23 小时边界（整点）
     // ---- v165：新加的「今年倒计时」（编号只能末尾追加，绝不回收）----
     const val YEAR = 42   // 今年倒计时：目标为「下一年 1 月 1 日 00:00:00」（今年结束的那一刻）
-    // ---- 43 已退役：v174 新增、v176 删除的「华都云境悦府购买正计时」；编号保留不回收，仅用于清理旧数据 ----
+    // ---- 43 华都云境悦府购买正计时（内置正计时）：编号保留不回收；本轮重新启用，仅删除其余华都档 ----
     const val HUADU_BUY = 43
     // ---- 本轮新加的「华都云境悦府20日倒计时」：固定目标 2026-10-20 00:00:00，风格与 GTA6 一致（日子定死、不滚动、可改名/色/动画/备注/提示音），全部 11 显示模式可用，悬浮窗同步 ----
     const val HUADU_20 = 44
@@ -108,6 +108,7 @@ object BuiltIn {
         cal.clear()
         when (type) {
             GTA6 -> cal.set(2026, Calendar.NOVEMBER, 19, 8, 0, 0)
+            HUADU_BUY -> cal.set(2025, Calendar.APRIL, 20, 17, 30, 0)  // 购房时刻：正计时起点
             else -> return null
         }
         cal.set(Calendar.MILLISECOND, 0)
@@ -121,8 +122,8 @@ object BuiltIn {
     fun isRolling(type: Int): Boolean =
         type != NONE && type != GTA6
 
-    /** 是否为「正计时」内置项：原仅华都云境悦府购买正计时使用，该功能已删除（不可找回），故恒为 false。 */
-    fun isCountUp(type: Int): Boolean = false
+    /** 是否为「正计时」内置项：仅华都云境悦府购买正计时（HUADU_BUY）使用——方向相反，显示「自起点至今已过去多久」。 */
+    fun isCountUp(type: Int): Boolean = type == HUADU_BUY
 
     /**
      * 周期滚动型内置项的那「一格」有多长（分钟）：非周期滚动型恒返回 0。
@@ -186,6 +187,7 @@ object BuiltIn {
         HOUR_22 -> "每22小时倒计时"
         HOUR_23 -> "每23小时倒计时"
         YEAR -> "今年倒计时"
+        HUADU_BUY -> "华都云境悦府购买正计时"
         else -> "内置倒计时"
     }
 }
@@ -542,8 +544,12 @@ data class Countdown(
     fun remainingText(now: Long = AlignedClock.now()): String {
         refreshBuiltInTarget()
         // 内置项的「标准模式」含义按类型定制（见 effectiveMode），所以必须把 builtIn 一起传下去
-        // 注：原华都云境悦府购买「正计时」的暂停冻结 / 真实墙钟逻辑已随该功能删除（不可找回）
-        val effNow = now
+        // v177：正计时（华都云境悦府购买）在「已暂停」时冻结在暂停那一刻；运行时取真实墙钟（毫秒模式也要真毫秒）
+        val effNow = when {
+            builtIn == BuiltIn.HUADU_BUY && paused -> pausedAt
+            builtIn == BuiltIn.HUADU_BUY -> System.currentTimeMillis()
+            else -> now
+        }
         return CountdownFormatter.remaining(targetTime, displayMode, effNow, builtIn)
     }
 }
