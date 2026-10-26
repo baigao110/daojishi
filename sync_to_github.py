@@ -254,7 +254,7 @@ def main():
     if counts["UPDATED"] == 0 and counts["NEW"] == 0 and counts["FAILED"] == 0:
         print("  => 源码已与 GitHub 完全同步")
 
-    note_line = "📅 v1.0.0.63：按用户确认「仅保持视觉风格与参考附件一致」——液态玻璃 Liquid Glass 深色调；药名库按用户要求保持删除（参考附件 (3).apk 含药名库，本次不恢复）。仅保留「华都云境悦府购买正计时」（正计时，起点 2025-04-20 17:30，支持暂停/开始），删除其余全部华都云境悦府日期倒计时（主档 + 12~31 日），不可找回。"
+    note_line = "📅 v1.0.0.63：整体视觉已统一为「液态玻璃 Liquid Glass 深色调」——主色板、按钮（胶囊/圆形青色玻璃）、卡片、对话框（玻璃半透明面板 + 青色描边）均为玻璃质感（含直接 AlertDialog.Builder 的提示框也已套上玻璃主题）。药名库按用户要求保持删除；仅保留「华都云境悦府购买正计时」（正计时，起点 2025-04-20 17:30，支持暂停/开始），删除其余全部华都云境悦府日期倒计时（主档 + 12~31 日），不可找回。"
     print(f"=== 2. 上传 APK 到 Release {tag} ===")
     create_release_if_missing(tag, note_line)
     upload_apk(tag, apk_name)
