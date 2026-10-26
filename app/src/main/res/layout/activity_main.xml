@@ -114,6 +114,17 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
+        <!-- 主 FAB 的柔和青色光晕：垫在最底层，收起时只在 FAB 周围透出 -->
+        <View
+            android:layout_width="96dp"
+            android:layout_height="96dp"
+            android:layout_gravity="bottom|end"
+            android:layout_marginBottom="-4dp"
+            android:layout_marginEnd="-4dp"
+            android:background="@drawable/glow_fab"
+            android:clickable="false"
+            android:focusable="false" />
+
         <!-- 菜单展开时的半透明背景：点击空白处收起 -->
         <View
             android:id="@+id/menuBackdrop"
