@@ -254,7 +254,7 @@ def main():
     if counts["UPDATED"] == 0 and counts["NEW"] == 0 and counts["FAILED"] == 0:
         print("  => 源码已与 GitHub 完全同步")
 
-    note_line = "📅 v1.0.0.63：仅保留「华都云境悦府购买正计时」（正计时，起点 2025-04-20 17:30），删除其余全部华都云境悦府日期倒计时（主档 + 12~31 日），不可找回；视觉为「液态玻璃 Liquid Glass 深色调」。本版不含药名库（按当前源码构建）。"
+    note_line = "📅 v1.0.0.63：基于参考附件（液态玻璃 Liquid Glass 深色调、无药名库）构建——风格与功能与参考附件保持一致。仅保留「华都云境悦府购买正计时」（正计时，起点 2025-04-20 17:30，支持暂停/开始），删除其余全部华都云境悦府日期倒计时（主档 + 12~31 日），不可找回。"
     print(f"=== 2. 上传 APK 到 Release {tag} ===")
     create_release_if_missing(tag, note_line)
     upload_apk(tag, apk_name)
