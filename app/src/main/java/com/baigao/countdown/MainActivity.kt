@@ -77,6 +77,7 @@ class MainActivity : Activity() {
         BuiltIn.TEN_MIN, BuiltIn.HALF_HOUR, BuiltIn.HOUR,
         BuiltIn.DAY, BuiltIn.WEEK, BuiltIn.MONTH,
         BuiltIn.GTA6,
+        BuiltIn.HUADU_BUY,  // 华都云境悦府购买正计时（正计时）
         BuiltIn.YEAR  // v165：今年倒计时
     )
 
@@ -94,6 +95,7 @@ class MainActivity : Activity() {
         BuiltIn.WEEK to "距离本周结束",
         BuiltIn.MONTH to "距离本月结束",
         BuiltIn.GTA6 to "距离 GTA6 发售（2026-11-19 08:00）",
+        BuiltIn.HUADU_BUY to "自购房时刻（2025-04-20 17:30）至今已过去",
         BuiltIn.YEAR to "距离今年结束",
     ).associate { it.first to Pair(BuiltIn.nameOf(it.first), it.second) }
 
@@ -251,12 +253,13 @@ class MainActivity : Activity() {
      * 万一哪天再挂回来，老数据认得出来。
      */
     /**
-     * 本轮：全部华都云境悦府倒计时（主档 HUADU=3、购房正计时 HUADU_BUY=43、12~24 日 = 44~57，
-     * 含已删的 25~31 日 = 54/58~63）永久下线、不可找回 —— 启动即把老数据里残留的这几条连同它们的
-     * 备份快照一起清掉；它们已不在 defaultBuiltInOrder / 恢复内置清单里，重装 App 也不会再生成。
+     * 本轮：删除全部华都云境悦府「日期倒计时」——主档 HUADU=3、12~31 日 = 44~63（含 25~31 日），
+     * 不可找回：启动即把老数据里残留的这几条连同它们的备份快照一起清掉；它们已不在
+     * defaultBuiltInOrder / 恢复内置清单里，重装 App 也不会再生成。
+     * 注意：华都云境悦府「购买正计时」(HUADU_BUY=43) 按要求保留、不在此列。
      */
     private fun purgeHuaduAll() {
-        val gone = setOf(3, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63)
+        val gone = setOf(3, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63)
         val stale = data.filter { it.builtIn in gone }
         if (stale.isNotEmpty()) {
             val staleIds = stale.map { it.id }.toHashSet()
@@ -1046,9 +1049,13 @@ class MainActivity : Activity() {
         }
     }
 
-    /** 原华都云境悦府购买正计时的「暂停 / 开始」功能已删除（不可找回），此函数不再生效，保留调用点稳定。 */
+    /** 华都云境悦府购买正计时（内置正计时）的「暂停 / 开始」：点一下翻转状态，主界面与悬浮窗同步刷新。 */
     fun onPauseToggle(c: Countdown) {
-        // 内置「正计时」暂停切换已随该功能移除
+        if (c.builtIn != BuiltIn.HUADU_BUY) return
+        c.togglePause()
+        CountdownStore.save(this, data)
+        rebuildList()
+        syncService()
     }
 
     /** 列表上点「显示模式」：弹出下拉框，在该条目可用的模式里直接挑一个（v156 起不再循环点）。 */
@@ -2021,8 +2028,13 @@ class MainActivity : Activity() {
             if (modeBtn.visibility == View.VISIBLE) {
                 modeBtn.text = CountdownFormatter.modeName(c.displayMode, c.builtIn)
             }
-            // 华都云境悦府购买正计时的「暂停 / 开始」按钮已随该功能删除（不可找回），永久隐藏
-            pauseBtn.visibility = View.GONE
+            // 华都云境悦府购买正计时的「暂停 / 开始」按钮：仅该内置项可见，文案随暂停状态翻转
+            if (c.builtIn == BuiltIn.HUADU_BUY) {
+                pauseBtn.visibility = View.VISIBLE
+                pauseBtn.text = if (c.paused) "开始" else "暂停"
+            } else {
+                pauseBtn.visibility = View.GONE
+            }
         }
 
         /** 刷新备注行：内置项显示随目标时间同步变化的实时备注，其它项沿用原备注。 */
