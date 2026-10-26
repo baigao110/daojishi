@@ -10,6 +10,18 @@
         <item name="android:colorAccent">@color/glass_accent</item>
         <item name="android:colorPrimary">@color/glass_accent</item>
         <item name="android:colorPrimaryDark">@color/glass_accent_deep</item>
+        <!-- 让所有 AlertDialog（含直接 AlertDialog.Builder 的提示框）也套用液态玻璃面板 -->
+        <item name="android:alertDialogTheme">@style/GlassDialogTheme</item>
+        <item name="android:dialogTheme">@style/GlassDialogTheme</item>
+    </style>
+
+    <!-- 液态玻璃对话框主题：半透明深底 + 青色描边圆角面板，文字与按钮强调色沿用玻璃色板 -->
+    <style name="GlassDialogTheme" parent="android:Theme.Material.Dialog.NoActionBar">
+        <item name="android:windowBackground">@drawable/dialog_bg</item>
+        <item name="android:colorAccent">@color/glass_accent</item>
+        <item name="android:textColorPrimary">@color/glass_text</item>
+        <item name="android:textColorSecondary">@color/glass_text_sub</item>
+        <item name="android:textColor">@color/glass_text</item>
     </style>
 
     <style name="UpdateTransparent" parent="android:Theme.Material.NoActionBar">
