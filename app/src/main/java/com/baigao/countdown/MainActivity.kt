@@ -62,7 +62,7 @@ class MainActivity : Activity() {
 
     /**
      * 内置小倒计时的出厂顺序（越靠前走得越少）：每分钟、每5分钟、每10分钟、每半小时、
-     * 每小时、当日 → 每周 → 当月 → 华都云境悦府 → GTA6 → 今年。
+     * 每小时、当日 → 每周 → 当月 → GTA6 → 今年。
      * ⚠️ v154 把 v151 那批（每2~9分钟、每2~23 小时，共 29 个档）整个下线了：出厂顺序与
      *    「倒计时类型」里都摘掉，老数据里的那几十条由 dropRetiredSteps() 启动即清。
      *    数量与顺序都不写死在文案里（见下面几处文案），免得再添一档时又漏改一处。
@@ -195,23 +195,20 @@ class MainActivity : Activity() {
         }
     }
 
-    /** 读取本地数据，并确保出厂顺序里那些内置项（每分钟 / 每5分钟 / 每10分钟 / 每半小时 / 每小时 / 当日 / 每周 / 当月 / 华都云境悦府 / GTA6 / 今年）始终存在。 */
+    /** 读取本地数据，并确保出厂顺序里那些内置项（每分钟 / 每5分钟 / 每10分钟 / 每半小时 / 每小时 / 当日 / 每周 / 当月 / GTA6 / 今年）始终存在。 */
     private fun loadData() {
         data = CountdownStore.load(this)
-        // 每次回到主界面都从 SharedPreferences 重新读一遍「已删除内置项」集合，
-        // 否则在编辑页点了「彻底删除」回来后，ensureBuiltInTimers 又会把它补回来。
-        loadRemovedBuiltIns()
         // ⚠️ v159：「100年内倒计时」整个档位删干净了，老数据里躺着的那几条连同它们的
         // 备份快照一起清掉（列表里不该再留着已经选不中的那一档）
         dropRetiredCentury()
         // ⚠️ v154：v151 那批 29 个周期滚动档整体下线，老数据里的条目与快照一并清掉
         dropRetiredSteps()
-        // ⚠️ 本轮：全部华都云境悦府倒计时（主档 + 12~24日 + 购房正计时）永久下线、不可找回
+        // v1.0.0.63：华都云境悦府整套倒计时整体删除、不可找回（见 purgeHuaduAll）
         purgeHuaduAll()
         if (ensureBuiltInTimers()) CountdownStore.save(this, data)
         // 内置小倒计时的顺序：拖过就按拖出来的顺序，没拖过就按出厂顺序（见 defaultBuiltInOrder）
         applyBuiltInOrder()
-        // 归零的华都云境悦府12~20日倒计时：自动删除并弹「已完成使命」提示
+        // 归零的华都云境悦府12~20日倒计时：自动删除并弹「已完成使命」提示（华都已整体删除，此处对残留项兜底）
         reapCompletedMissions()
     }
 
@@ -250,28 +247,6 @@ class MainActivity : Activity() {
      * 已经选不中的那一批。内置类型常量 13~41 照旧留着不回收（见 BuiltIn），
      * 万一哪天再挂回来，老数据认得出来。
      */
-    /**
-     * 本轮：全部华都云境悦府倒计时（主档 HUADU=3、购房正计时 HUADU_BUY=43、12~24 日 = 44~57，
-     * 含已删的 25~31 日 = 54/58~63）永久下线、不可找回 —— 启动即把老数据里残留的这几条连同它们的
-     * 备份快照一起清掉；它们已不在 defaultBuiltInOrder / 恢复内置清单里，重装 App 也不会再生成。
-     */
-    private fun purgeHuaduAll() {
-        val gone = setOf(3, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63)
-        val stale = data.filter { it.builtIn in gone }
-        if (stale.isNotEmpty()) {
-            val staleIds = stale.map { it.id }.toHashSet()
-            data.removeAll { c -> c.id in staleIds }
-            CountdownStore.save(this, data)
-            rebuildList()
-            syncService()
-        }
-        for (key in removedPrefs.all.keys.toList()) {
-            if (!key.startsWith("backup_")) continue
-            val type = key.removePrefix("backup_").substringBefore("_").toIntOrNull() ?: continue
-            if (type in gone) removedPrefs.edit().remove(key).apply()
-        }
-    }
-
     private fun dropRetiredSteps() {
         val stale = data.filter { it.builtIn in BuiltIn.MIN_2..BuiltIn.HOUR_23 }
         if (stale.isEmpty()) {
@@ -283,6 +258,47 @@ class MainActivity : Activity() {
         val staleIds = stale.map { it.id }.toHashSet()  // ⚠️ Countdown.id 是 UUID 字符串，不是 Long
         data.removeAll { c -> c.id in staleIds }
         sweepRetiredStepKeys()
+        CountdownStore.save(this, data)
+        rebuildList()
+        syncService()
+    }
+
+    /**
+     * v1.0.0.63：华都云境悦府整套倒计时整体删除、不可找回。
+     * 覆盖：主档（HUADU=3）、购房正计时（HUADU_BUY=43）、12~31 日各档（HUADU_12..HUADU_28=44..54），
+     * 以及用户自建、标题以「华都云境悦府」开头的任何条目（名称兜底，防历史残留）。
+     * 启动即清：从列表移除、清掉设置快照与「已删除 / 已完成使命」标记，重装或「恢复内置」都不会再生成。
+     */
+    private fun purgeHuaduAll() {
+        val huaduTypes = setOf(
+            BuiltIn.HUADU, BuiltIn.HUADU_BUY,
+            BuiltIn.HUADU_12, BuiltIn.HUADU_13, BuiltIn.HUADU_14,
+            BuiltIn.HUADU_15, BuiltIn.HUADU_16, BuiltIn.HUADU_17, BuiltIn.HUADU_18,
+            BuiltIn.HUADU_19, BuiltIn.HUADU_20, BuiltIn.HUADU_21, BuiltIn.HUADU_28
+        )
+        val removed = data.filter {
+            it.builtIn in huaduTypes || it.title.startsWith("华都云境悦府")
+        }
+        if (removed.isEmpty()) return
+        val removedIds = removed.map { it.id }.toHashSet()
+        data.removeAll { c -> c.id in removedIds }
+        // 清掉被删华都项的设置快照与「已删除」标记，避免「恢复内置」里还挂着可找回项
+        for (t in huaduTypes) {
+            removedBuiltIns.remove(t)
+            removedPrefs.edit().remove("backup_$t").apply()
+            for (key in removedPrefs.all.keys) {
+                if (key.startsWith("backup_${t}_")) removedPrefs.edit().remove(key).apply()
+            }
+        }
+        removedPrefs.edit()
+            .putStringSet("types", removedBuiltIns.map { it.toString() }.toSet())
+            .apply()
+        // 清「已完成使命」标记里残留的华都类型（同一份 builtin_removed 偏好）
+        val mdSet = removedPrefs.getStringSet("mission_done_types", emptySet())
+            ?.toMutableSet() ?: mutableSetOf()
+        if (mdSet.removeAll(huaduTypes.map { it.toString() })) {
+            removedPrefs.edit().putStringSet("mission_done_types", mdSet).apply()
+        }
         CountdownStore.save(this, data)
         rebuildList()
         syncService()
@@ -314,7 +330,7 @@ class MainActivity : Activity() {
     private fun ensureBuiltInTimers(): Boolean {
         // 新补的内置项一律插到列表最前面，所以按出厂顺序「倒着」补：
         // 最后一个 GTA6 先插、第一个每分钟最后插，补完列表里内置项的顺序正好是
-        // 出厂顺序（见 defaultBuiltInOrder）：每分钟 → 每5/10分钟 → 每半小时 → 每小时 → 当日 → 每周 → 当月 → 华都15日 → 华都16日 → 华都17日 → 华都18日 → 华都19日 → 华都20日 → 华都云境悦府 → GTA6 → 今年
+        // 出厂顺序（见 defaultBuiltInOrder）：每分钟 → 每5/10分钟 → 每半小时 → 每小时 → 当日 → 每周 → 当月 → GTA6 → 今年
         var added = false
         for (t in defaultBuiltInOrder.reversed()) {
             val info = builtInInfo[t] ?: continue
@@ -401,7 +417,7 @@ class MainActivity : Activity() {
         findViewById<View>(R.id.selCancelBtn).setOnClickListener { exitMultiSelect() }
         findViewById<View>(R.id.selAllBtn).setOnClickListener { selectAllRows() }
         findViewById<View>(R.id.selNoneBtn).setOnClickListener { clearAllRows() }
-        loadRemovedBuiltIns()
+        removedPrefs.getStringSet("types", emptySet())?.forEach { removedBuiltIns.add(it.toInt()) }
 
         scrollView = findViewById(R.id.scroll)
         listContainer = findViewById(R.id.listContainer)
@@ -499,14 +515,7 @@ class MainActivity : Activity() {
 
     /** 一行文字的提示对话框（风格与「关于」页一致）。 */
     private fun showNotice(title: String, message: String, positive: String, onOk: () -> Unit) {
-        UpdateManager.showStyledDialog(
-            activity = this,
-            title = title,
-            positiveText = positive,
-            negativeText = "先不了",
-            cancelable = true,
-            onPositive = onOk
-        ) { host ->
+        UpdateManager.showStyledDialog(this, title, positive, "先不了", true, onOk) { host ->
             val tv = TextView(this)
             tv.text = message
             tv.setTextColor(Color.WHITE)
@@ -926,7 +935,7 @@ class MainActivity : Activity() {
             val probe = TextView(this).apply {
                 text = kv.second + if (i == checked) " ✓" else ""
                 textSize = 13f
-                setTextColor(0xFFEAF2FF.toInt())
+                setTextColor(0xFFEAF6FF.toInt())
             }
             probe.measure(
                 View.MeasureSpec.makeMeasureSpec(screenW - (40 * d).toInt(), View.MeasureSpec.AT_MOST),
@@ -951,7 +960,7 @@ class MainActivity : Activity() {
             val label = TextView(this).apply {
                 text = kv.second + if (i == checked) " ✓" else ""
                 textSize = 13f
-                setTextColor(0xFFEAF2FF.toInt())
+                setTextColor(0xFFEAF6FF.toInt())
                 setSingleLine(true)
                 // ⚠️ v157：这一行是「下拉框只剩色块」的根因 —— 不写这行就用默认参数
                 //    （宽度 MATCH_PARENT），名字会被量成 0 宽。
@@ -1037,7 +1046,7 @@ class MainActivity : Activity() {
         ) { host ->
             val tv = TextView(this)
             tv.text = body
-            tv.setTextColor(Color.parseColor("#EAF2FF"))
+            tv.setTextColor(Color.parseColor("#FFE4EEFF"))
             tv.textSize = 14f
             tv.setLineSpacing(0f, 1.45f)
             tv.setShadowLayer(2f, 0f, 1f, Color.parseColor("#CC000000"))
@@ -1046,9 +1055,13 @@ class MainActivity : Activity() {
         }
     }
 
-    /** 原华都云境悦府购买正计时的「暂停 / 开始」功能已删除（不可找回），此函数不再生效，保留调用点稳定。 */
+    /** v177：华都云境悦府购买正计时的「暂停 / 开始」：点一下翻转状态，主界面与悬浮窗同步刷新。 */
     fun onPauseToggle(c: Countdown) {
-        // 内置「正计时」暂停切换已随该功能移除
+        if (c.builtIn != BuiltIn.HUADU_BUY) return
+        c.togglePause()
+        CountdownStore.save(this, data)
+        rebuildList()
+        syncService()
     }
 
     /** 列表上点「显示模式」：弹出下拉框，在该条目可用的模式里直接挑一个（v156 起不再循环点）。 */
@@ -1058,7 +1071,7 @@ class MainActivity : Activity() {
         // 只在「该条目可用的模式」里列：当日倒计时跳过已下线的天数模式
         val modes = CountdownFormatter.availableModes(c.builtIn)
         if (modes.size < 2) return
-        val items = modes.map { m -> 0xFF00D8FF.toInt() to CountdownFormatter.modeName(m, c.builtIn) }
+        val items = modes.map { m -> 0xFF00FFFF.toInt() to CountdownFormatter.modeName(m, c.builtIn) }
         showPickPopup(anchor, items, modes.indexOf(c.displayMode)) { i ->
             val t = modes[i]
             if (t == c.displayMode) return@showPickPopup
@@ -1071,7 +1084,7 @@ class MainActivity : Activity() {
 
     /** 列表上点「动画」按钮：弹出下拉框，直接挑一种跳秒动画（v156 起不再循环点）。 */
     fun onAnimPick(c: Countdown, anchor: View) {
-        val items = AnimStyle.NAMES.map { 0xFF00D8FF.toInt() to it }
+        val items = AnimStyle.NAMES.map { 0xFF00FFFF.toInt() to it }
         showPickPopup(anchor, items, c.animStyle) { i ->
             if (i == c.animStyle) return@showPickPopup
             c.animStyle = i
@@ -1206,7 +1219,7 @@ class MainActivity : Activity() {
         ) { host ->
             val tv = TextView(this)
             tv.text = message
-            tv.setTextColor(Color.parseColor("#EAF2FF"))
+            tv.setTextColor(Color.parseColor("#FFE4EEFF"))
             tv.textSize = 14f
             tv.setLineSpacing(0f, 1.45f)
             tv.setShadowLayer(2f, 0f, 1f, Color.parseColor("#CC000000"))
@@ -1274,14 +1287,6 @@ class MainActivity : Activity() {
         }
     }
 
-    /** 启动时把「已被删除的内置倒计时」（含彻底删除）从 SharedPreferences 读回内存集合。 */
-    private fun loadRemovedBuiltIns() {
-        removedBuiltIns.clear()
-        removedPrefs.getStringSet("types", emptySet())?.forEach {
-            it.toIntOrNull()?.let { t -> removedBuiltIns.add(t) }
-        }
-    }
-
     /** 记录「某个内置倒计时已被删除」，写盘持久化。 */
     private fun markBuiltInRemoved(type: Int) {
         if (!removedBuiltIns.add(type)) return
@@ -1326,7 +1331,6 @@ class MainActivity : Activity() {
             (t in removedBuiltIns
                 || data.none { it.builtIn == t })
                 && !CountdownStore.isMissionDone(this, t)
-                && !CountdownStore.isPermanentlyRemoved(this, t)
         }
 
     /**
@@ -1353,7 +1357,7 @@ class MainActivity : Activity() {
             }
             AlertDialog.Builder(this)
                 .setTitle("小内置都在")
-                .setMessage("内置小倒计时都乖乖在列表里啦。\n想让它们回到出厂顺序（每分钟 → 每5/10分钟 → 每半小时 → 每小时 → 当日 → 每周 → 当月 → 华都云境悦府 → GTA6 → 华都云境悦府购买正计时 → 今年）就点「主界面默认排序」。")
+                .setMessage("内置小倒计时都乖乖在列表里啦。\n想让它们回到出厂顺序（每分钟 → 每5/10分钟 → 每半小时 → 每小时 → 当日 → 每周 → 当月 → GTA6 → 今年）就点「主界面默认排序」。")
                 .setPositiveButton("主界面默认排序") { _, _ -> restoreDefaultOrder() }
                 .setNegativeButton("先留着", null)
                 .show()
@@ -1384,7 +1388,7 @@ class MainActivity : Activity() {
         ) { host ->
             host.addView(TextView(this).apply {
                 text = "勾选想找回的小倒计时，确定后按删掉之前的设置（主题、模式、动画、提示音这些）还原哦。"
-                setTextColor(Color.parseColor("#EAF2FF"))
+                setTextColor(Color.parseColor("#FFE4EEFF"))
                 textSize = 13f
                 setLineSpacing(0f, 1.3f)
                 setShadowLayer(2f, 0f, 1f, Color.parseColor("#CC000000"))
@@ -1410,7 +1414,7 @@ class MainActivity : Activity() {
             if (missing.isEmpty()) {
                 host.addView(TextView(this).apply {
                     text = "内置小倒计时都乖乖在列表里啦"
-                    setTextColor(Color.parseColor("#A9B8D6"))
+                    setTextColor(Color.parseColor("#FFC6D5EF"))
                     textSize = 13f
                     setLineSpacing(0f, 1.25f)
                     setShadowLayer(2f, 0f, 1f, Color.parseColor("#CC000000"))
@@ -1426,7 +1430,7 @@ class MainActivity : Activity() {
                     minWidth = 0
                     minimumWidth = 0
                     includeFontPadding = false
-                    buttonTintList = android.content.res.ColorStateList.valueOf(Color.parseColor("#00D8FF"))
+                    buttonTintList = android.content.res.ColorStateList.valueOf(Color.parseColor("#00FFFF"))
                     setOnCheckedChangeListener { _, b -> checked[i] = b }
                 }
                 boxes.add(cb)
@@ -1436,7 +1440,7 @@ class MainActivity : Activity() {
                 }
                 texts.addView(TextView(this).apply {
                     text = def.second
-                    setTextColor(Color.parseColor("#EAF2FF"))
+                    setTextColor(Color.parseColor("#FFFFFFFF"))
                     textSize = 15f
                     setLineSpacing(0f, 1.15f)
                     setShadowLayer(2f, 0f, 1f, Color.parseColor("#CC000000"))
@@ -1446,7 +1450,7 @@ class MainActivity : Activity() {
                 })
                 texts.addView(TextView(this).apply {
                     text = def.third
-                    setTextColor(Color.parseColor("#A9B8D6"))
+                    setTextColor(Color.parseColor("#FFC6D5EF"))
                     textSize = 12.5f
                     setLineSpacing(0f, 1.15f)
                     setShadowLayer(2f, 0f, 1f, Color.parseColor("#CC000000"))
@@ -1476,7 +1480,7 @@ class MainActivity : Activity() {
     private fun selectAllBtn(label: String, onClick: () -> Unit): TextView =
         TextView(this).apply {
             text = label
-            setTextColor(Color.parseColor("#00D8FF"))
+            setTextColor(Color.parseColor("#FF4DFBFF"))
             textSize = 13f
             setShadowLayer(2f, 0f, 1f, Color.parseColor("#CC000000"))
             setPadding(dp(12), dp(6), dp(12), dp(6))
@@ -2021,8 +2025,13 @@ class MainActivity : Activity() {
             if (modeBtn.visibility == View.VISIBLE) {
                 modeBtn.text = CountdownFormatter.modeName(c.displayMode, c.builtIn)
             }
-            // 华都云境悦府购买正计时的「暂停 / 开始」按钮已随该功能删除（不可找回），永久隐藏
-            pauseBtn.visibility = View.GONE
+            // v177：华都云境悦府购买正计时的「暂停 / 开始」按钮（玻璃质感，与 GTA6 展开悬浮窗同一路数）
+            if (c.builtIn == BuiltIn.HUADU_BUY) {
+                pauseBtn.visibility = View.VISIBLE
+                pauseBtn.text = if (c.paused) "开始" else "暂停"
+            } else {
+                pauseBtn.visibility = View.GONE
+            }
         }
 
         /** 刷新备注行：内置项显示随目标时间同步变化的实时备注，其它项沿用原备注。 */
