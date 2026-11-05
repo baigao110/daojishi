@@ -16,6 +16,7 @@
 """
 import os
 import sys
+import re
 import json
 import base64
 import hashlib
@@ -180,17 +181,38 @@ def upload_apk(tag: str, apk_name: str):
     print(f"       {res.get('browser_download_url')}")
 
 
-def patch_release_body(tag: str, note_line: str):
+def patch_release_body(tag: str, body_text: str):
+    """用完整更新说明【覆盖】Release 发布说明（幂等：每次都同步成 update.json 的最新内容，
+    确保 GitHub 上的介绍永远跟着最新版本走，不会停留在旧版本号 / 旧功能描述）。"""
     rel = get_release(tag)
     if rel is None:
         return
-    body = rel.get("body") or ""
-    if note_line and note_line not in body:
-        new_body = (note_line + "\n\n" + body) if body.strip() else note_line
-    else:
-        new_body = body
     api("PATCH", f"/repos/{OWNER}/{REPO}/releases/{rel['id']}",
-        {"body": new_body, "make_latest": "true"})
+        {"body": body_text, "make_latest": "true"})
+
+
+def update_repo_description(version_name: str):
+    """把仓库 About 描述里的版本号同步成最新上传的版本（避免停留在旧版本号）。
+
+    描述形如：Countdown Timer for Android (v1.0.0) - ...
+    用正则把其中的 (vX.Y.Z) 替换为当前版本；若描述里本就没有版本号，则追加 (vX.Y.Z)。
+    这样每次 sync_to_github.py 跑完，GitHub 仓库「介绍」里的版本号都会跟着最新 Release 走。
+    """
+    repo = api("GET", f"/repos/{OWNER}/{REPO}")
+    if repo is None:
+        print("  [WARN] 读不到仓库信息，跳过描述更新")
+        return
+    desc = repo.get("description") or ""
+    new_desc = re.sub(r"\(v[0-9]+\.[0-9]+\.[0-9]+\)", f"(v{version_name})", desc)
+    if new_desc == desc and version_name and f"(v{version_name})" not in desc:
+        # 描述里没有现成的 (vX.Y.Z)，补一个，避免永远停在某旧版本
+        new_desc = f"{desc.rstrip()} (v{version_name})".rstrip()
+    if new_desc == desc:
+        print(f"  描述已是最新版本 (v{version_name})，无需改动")
+        return
+    api("PATCH", f"/repos/{OWNER}/{REPO}", {"description": new_desc})
+    print(f"  [OK] 仓库 About 描述版本号已更新为 (v{version_name})")
+    print(f"       新描述：{new_desc}")
 
 
 def create_release_if_missing(tag: str, note_line: str):
@@ -230,7 +252,12 @@ def main():
         local_path = os.path.join(ROOT, rel.replace("/", os.sep))
         if not os.path.isfile(local_path):
             continue
-        state = sync_file(rel, local_path)
+        # 单个文件（尤其是被代理拦截重定向的二进制截图）同步异常时跳过，不中断整轮同步
+        try:
+            state = sync_file(rel, local_path)
+        except Exception as e:
+            print(f"  [跳过] {rel} 同步异常，跳过：{type(e).__name__} {e}")
+            state = "FAILED"
         counts[state] = counts.get(state, 0) + 1
         if state != "SAME":
             print(f"  [{state}] {rel}")
@@ -239,14 +266,30 @@ def main():
     if counts["UPDATED"] == 0 and counts["NEW"] == 0 and counts["FAILED"] == 0:
         print("  => 源码已与 GitHub 完全同步")
 
-    note_line = ("🧹 v1.0.0.63：移除「华都云境悦府」整套倒计时（含购房正计时及 12~31 日各档），主界面与悬浮窗同步消失、不可找回、重装不复活；其余功能与玻璃主题风格保持不变。")
+    # 更新说明：完整 note（最新在前）直接作为 Release 发布说明；首段用于初次创建时的 body
+    note_full = normalize_note(cfg.get("note"))
+    note_first = first_paragraph(cfg.get("note")) or f"版本 {tag}"
     print(f"=== 2. 上传 APK 到 Release {tag} ===")
-    create_release_if_missing(tag, note_line)
+    create_release_if_missing(tag, note_first)
     upload_apk(tag, apk_name)
 
     print("=== 3. 发布说明 & 设为 latest ===")
-    patch_release_body(tag, note_line)
+    patch_release_body(tag, note_full)
+    # 仓库 About 描述里的版本号同步成最新上传版本（根治「永远停在 v1.0.0」）
+    update_repo_description(cfg['versionName'])
     print("DONE")
+
+
+def normalize_note(note: str) -> str:
+    """update.json 的 note 用【字面 \\n】作换行符，转成真实换行再上 GitHub，否则会显示成一串 \\n。"""
+    return (note or "").replace("\\n", "\n").strip()
+
+
+def first_paragraph(note: str) -> str:
+    """取更新说明的第一段（即最新版本的那条），用于 Release 初次创建时的 body。"""
+    norm = normalize_note(note)
+    paras = [p.strip() for p in re.split(r"\n\s*\n", norm) if p.strip()]
+    return paras[0] if paras else ""
 
 
 if __name__ == "__main__":
