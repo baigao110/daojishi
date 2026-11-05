@@ -82,7 +82,17 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:gravity="center"
-            android:text="项目主页"
+            android:text="倒计时的项目主页"
+            android:textColor="#00FFFF"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/emailTv"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:gravity="center"
+            android:text="联系方式：baigao110@qq.com"
             android:textColor="#00FFFF"
             android:textSize="13sp" />
 
