@@ -87,7 +87,7 @@ class UpdateActivity : Activity() {
     private fun startDownload(info: UpdateManager.UpdateInfo) {
         val tv = TextView(this).apply {
             text = "准备中…"
-            setTextColor(0xFFEAF2FF.toInt())
+            setTextColor(0xFFE6E6F0.toInt())
             textSize = 14f
             setLineSpacing(4f, 1.15f)
         }
