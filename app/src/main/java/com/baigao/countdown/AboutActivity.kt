@@ -135,6 +135,7 @@ class AboutActivity : Activity() {
         timeFormatSpinner = findViewById(R.id.timeFormatSpinner)
         timeFormatDescTv = findViewById(R.id.timeFormatDescTv)
         versionTv.text = "版本 v${UpdateManager.currentVersionName(this)}"
+        // 「倒计时的项目主页」：复制具体网址到剪贴板并弹出浏览器选择（功能同前，仅文字改了）
         findViewById<TextView>(R.id.githubLinkTv).setOnClickListener {
             val url = "https://github.com/baigao110/daojishi"
             try {
@@ -148,6 +149,17 @@ class AboutActivity : Activity() {
             } catch (_: Exception) {
                 // 没有可用浏览器时，至少把网址留在剪贴板里，去别的浏览器粘贴即可
                 Toast.makeText(this, "项目主页地址已复制到剪贴板，可粘贴到其他浏览器打开", Toast.LENGTH_LONG).show()
+            }
+        }
+        // 「联系方式：baigao110@qq.com」：点击即把邮箱复制到剪贴板，方便在其他地方粘贴使用
+        findViewById<TextView>(R.id.emailTv).setOnClickListener {
+            val email = "baigao110@qq.com"
+            try {
+                val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                cm.setPrimaryClip(ClipData.newPlainText("联系方式", email))
+                Toast.makeText(this, "已复制邮箱 $email 到剪贴板，可粘贴到其他地方使用", Toast.LENGTH_SHORT).show()
+            } catch (_: Exception) {
+                Toast.makeText(this, "邮箱：$email", Toast.LENGTH_LONG).show()
             }
         }
         backBtn.setOnClickListener { finish() }
