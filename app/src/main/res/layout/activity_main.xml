@@ -4,6 +4,7 @@
     android:layout_height="match_parent"
     android:background="@drawable/glass_bg">
 
+    <!-- 液态玻璃背景层：模糊光斑，玻璃卡片透过去才有折射感 -->
     <com.baigao.countdown.GlassBackdrop
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
@@ -18,7 +19,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="倒计时"
-            android:textColor="#00D8FF"
+            android:textColor="#00FFFF"
             android:textSize="20sp"
             android:textStyle="bold"
             android:paddingBottom="4dp" />
@@ -38,7 +39,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="已经挑了 0 个"
-            android:textColor="#00D8FF"
+            android:textColor="#00FFFF"
             android:textSize="13sp"
             android:textStyle="bold" />
 
@@ -47,7 +48,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="全选"
-            android:textColor="#00D8FF"
+            android:textColor="#4DFBFF"
             android:textSize="13sp"
             android:layout_marginStart="10dp" />
 
@@ -56,7 +57,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="全不选"
-            android:textColor="#00D8FF"
+            android:textColor="#4DFBFF"
             android:textSize="13sp"
             android:layout_marginStart="8dp" />
 
@@ -222,8 +223,8 @@
             android:text="+"
             android:textSize="30sp"
             android:textStyle="bold"
-            android:textColor="@color/glass_accent_on"
-            android:background="@drawable/fab_accent" />
+            android:textColor="#001018"
+            android:background="@drawable/circle_btn" />
     </FrameLayout>
 
 </FrameLayout>
