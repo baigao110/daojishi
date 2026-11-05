@@ -23,6 +23,29 @@ so you only need to glance at it to check how much time is left.
 
 ---
 
+## Current Version & Recent Updates (v1.0.0.63)
+
+> Latest version: **v1.0.0.63** (versionCode 191). Download the latest APK from
+> [Releases](https://github.com/baigao110/daojishi/releases/latest) and install directly.
+
+What changed in v1.0.0.63:
+
+- **Removed the entire "华都云境悦府" (Huadu Yunjiang Yuefu) countdown set**: including the purchase
+  count-up timer and the 12~31-day entries. They disappear from both the main list and the floating
+  window, cannot be recovered, and won't come back after a reinstall. All other features and the glass
+  theme stay unchanged.
+- **Three screen-keep-on toggles now default to ON**: UI keep-on, floating-window keep-on, and
+  lock-screen notification keep-on (users who changed them keep their own setting).
+- **Note time format now defaults to 12-hour** (was 24-hour).
+- **About page "项目主页" renamed to "倒计时的项目主页"**; tapping it copies the exact URL and pops up
+  a browser chooser (the URL is no longer shown on the page).
+- **New contact line**: below the homepage on the About page, "联系方式：baigao110@qq.com" was added —
+  tapping it copies the email to the clipboard for use elsewhere.
+
+Full update history: [Releases](https://github.com/baigao110/daojishi/releases).
+
+---
+
 ## Screenshots
 
 | Main list | Add / Edit countdown |
@@ -120,8 +143,11 @@ so you only need to glance at it to check how much time is left.
 
 ### Built-in countdowns
 
-Seven come built in: **daily, hourly, every half hour, weekly, monthly, 华都云境悦府
-(Huadu Yunjiang Yuefu, 2026-10-31 00:00:00), GTA6 (2026-11-19 08:00:00)**
+Six come built in: **daily, hourly, every half hour, weekly, monthly, GTA6
+(2026-11-19 08:00:00)**
+
+> Note: the entire "华都云境悦府" (Huadu Yunjiang Yuefu) countdown set was removed in v1.0.0.63 and is
+> no longer built in.
 
 - Rolling types (daily / weekly / monthly) recompute their target every day, week or month;
   fixed types stop at 0 when due and never roll into the next cycle
@@ -132,7 +158,7 @@ Seven come built in: **daily, hourly, every half hour, weekly, monthly, 华都�
 - Deleting stores a **settings snapshot**, so restoring via 「恢复内置」 Restore built-ins from the 「＋」 menu
   brings back that entry's theme color, display mode, animation, sound, floating-window setting and
   note as they were, and only recomputes the target time
-- When all seven built-in entries are back in the list, the 「恢复内置」 menu item hides itself
+- When all six built-in entries are back in the list, the 「恢复内置」 menu item hides itself
 
 #### Display modes of built-in countdowns
 
@@ -143,7 +169,7 @@ Because the cycles differ, "standard mode" shows something different for each bu
 | --- | --- | --- |
 | Daily | ≤ 24 hours | **xx时xx分xx秒** (weeks / days are always 0) |
 | Weekly | ≤ 7 days | **xx天xx时xx分xx秒** (weeks are always 0) |
-| Monthly, 华都云境悦府, GTA6 | Long cycle | xx周xx天xx时xx分xx秒 (same as a normal countdown) |
+| Monthly, GTA6 | Long cycle | xx周xx天xx时xx分xx秒 (same as a normal countdown) |
 
 Also, the **daily countdown has no 「天数模式」 Days mode** (it would always show 0 days) — it no
 longer appears in the list, the floating window or the editor, and older data that somehow used it
