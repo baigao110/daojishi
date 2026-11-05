@@ -30,7 +30,7 @@ object ScreenKeepOn {
 
     // ---------------- UI 界面常亮 ----------------
 
-    fun isUiOn(ctx: Context): Boolean = prefs(ctx).getBoolean(KEY_UI, false)
+    fun isUiOn(ctx: Context): Boolean = prefs(ctx).getBoolean(KEY_UI, true)
 
     fun setUiOn(ctx: Context, on: Boolean) {
         prefs(ctx).edit().putBoolean(KEY_UI, on).apply()
@@ -38,7 +38,7 @@ object ScreenKeepOn {
 
     // ---------------- 悬浮框常亮 ----------------
 
-    fun isFloatOn(ctx: Context): Boolean = prefs(ctx).getBoolean(KEY_FLOAT, false)
+    fun isFloatOn(ctx: Context): Boolean = prefs(ctx).getBoolean(KEY_FLOAT, true)
 
     fun setFloatOn(ctx: Context, on: Boolean) {
         prefs(ctx).edit().putBoolean(KEY_FLOAT, on).apply()
