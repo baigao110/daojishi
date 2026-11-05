@@ -1,0 +1,85 @@
+Fetching tree...
+total blobs: 94
+  SKIP (excluded) .workbuddy/memory/2026-10-10.md
+Traceback (most recent call last):
+  File "C:\Users\BDJ\.workbuddy\binaries\python\versions\3.13.12\Lib\urllib\request.py", line 1319, in do_open
+    h.request(req.get_method(), req.selector, req.data, headers,
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+              encode_chunked=req.has_header('Transfer-encoding'))
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\BDJ\.workbuddy\binaries\python\versions\3.13.12\Lib\http\client.py", line 1367, in request
+    self._send_request(method, url, body, headers, encode_chunked)
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\BDJ\.workbuddy\binaries\python\versions\3.13.12\Lib\http\client.py", line 1413, in _send_request
+    self.endheaders(body, encode_chunked=encode_chunked)
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\BDJ\.workbuddy\binaries\python\versions\3.13.12\Lib\http\client.py", line 1362, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\BDJ\.workbuddy\binaries\python\versions\3.13.12\Lib\http\client.py", line 1122, in _send_output
+    self.send(msg)
+    ~~~~~~~~~^^^^^
+  File "C:\Users\BDJ\.workbuddy\binaries\python\versions\3.13.12\Lib\http\client.py", line 1066, in send
+    self.connect()
+    ~~~~~~~~~~~~^^
+  File "C:\Users\BDJ\.workbuddy\binaries\python\versions\3.13.12\Lib\http\client.py", line 1508, in connect
+    self.sock = self._context.wrap_socket(self.sock,
+                ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+                                          server_hostname=server_hostname)
+                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\BDJ\.workbuddy\binaries\python\versions\3.13.12\Lib\ssl.py", line 455, in wrap_socket
+    return self.sslsocket_class._create(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        sock=sock,
+        ^^^^^^^^^^
+    ...<5 lines>...
+        session=session
+        ^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\BDJ\.workbuddy\binaries\python\versions\3.13.12\Lib\ssl.py", line 1076, in _create
+    self.do_handshake()
+    ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\BDJ\.workbuddy\binaries\python\versions\3.13.12\Lib\ssl.py", line 1372, in do_handshake
+    self._sslobj.do_handshake()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+ssl.SSLEOFError: [SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1032)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\BDJ\Desktop\自制软件工具\倒计时工具\CountdownAndroid\_restore_r24.py", line 43, in <module>
+    meta = api("GET", f"/repos/baigao110/countdown-android/git/blobs/{b['sha']}")
+  File "C:\Users\BDJ\Desktop\自制软件工具\倒计时工具\CountdownAndroid\_restore_r24.py", line 26, in api
+    with urllib.request.urlopen(req, timeout=180) as r:
+         ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "C:\Users\BDJ\.workbuddy\binaries\python\versions\3.13.12\Lib\urllib\request.py", line 189, in urlopen
+    return opener.open(url, data, timeout)
+           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\BDJ\.workbuddy\binaries\python\versions\3.13.12\Lib\urllib\request.py", line 495, in open
+    response = meth(req, response)
+  File "C:\Users\BDJ\.workbuddy\binaries\python\versions\3.13.12\Lib\urllib\request.py", line 604, in http_response
+    response = self.parent.error(
+        'http', request, response, code, msg, hdrs)
+  File "C:\Users\BDJ\.workbuddy\binaries\python\versions\3.13.12\Lib\urllib\request.py", line 527, in error
+    result = self._call_chain(*args)
+  File "C:\Users\BDJ\.workbuddy\binaries\python\versions\3.13.12\Lib\urllib\request.py", line 466, in _call_chain
+    result = func(*args)
+  File "C:\Users\BDJ\.workbuddy\binaries\python\versions\3.13.12\Lib\urllib\request.py", line 720, in http_error_302
+    return self.parent.open(new, timeout=req.timeout)
+           ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\BDJ\.workbuddy\binaries\python\versions\3.13.12\Lib\urllib\request.py", line 489, in open
+    response = self._open(req, data)
+  File "C:\Users\BDJ\.workbuddy\binaries\python\versions\3.13.12\Lib\urllib\request.py", line 506, in _open
+    result = self._call_chain(self.handle_open, protocol, protocol +
+                              '_open', req)
+  File "C:\Users\BDJ\.workbuddy\binaries\python\versions\3.13.12\Lib\urllib\request.py", line 466, in _call_chain
+    result = func(*args)
+  File "C:\Users\BDJ\.workbuddy\binaries\python\versions\3.13.12\Lib\urllib\request.py", line 1367, in https_open
+    return self.do_open(http.client.HTTPSConnection, req,
+           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                        context=self._context)
+                        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\BDJ\.workbuddy\binaries\python\versions\3.13.12\Lib\urllib\request.py", line 1322, in do_open
+    raise URLError(err)
+urllib.error.URLError: <urlopen error [SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1032)>
