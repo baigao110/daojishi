@@ -2,6 +2,8 @@ package com.baigao.countdown
 
 import android.app.Activity
 import android.content.Context
+import android.content.ClipboardManager
+import android.content.ClipData
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -134,10 +136,18 @@ class AboutActivity : Activity() {
         timeFormatDescTv = findViewById(R.id.timeFormatDescTv)
         versionTv.text = "版本 v${UpdateManager.currentVersionName(this)}"
         findViewById<TextView>(R.id.githubLinkTv).setOnClickListener {
+            val url = "https://github.com/baigao110/daojishi"
             try {
-                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/baigao110/daojishi")))
+                // 先把具体网址复制到剪贴板，方便在其他浏览器 / 设备上粘贴使用
+                val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                cm.setPrimaryClip(ClipData.newPlainText("项目主页", url))
+                // 再弹出「用哪个浏览器打开」选择器（不内置网址，由用户挑浏览器）
+                val viewIntent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                startActivity(Intent.createChooser(viewIntent, "用哪个浏览器打开项目主页"))
+                Toast.makeText(this, "已复制项目主页地址到剪贴板，并弹出浏览器选择", Toast.LENGTH_SHORT).show()
             } catch (_: Exception) {
-                Toast.makeText(this, "打不开链接呢", Toast.LENGTH_SHORT).show()
+                // 没有可用浏览器时，至少把网址留在剪贴板里，去别的浏览器粘贴即可
+                Toast.makeText(this, "项目主页地址已复制到剪贴板，可粘贴到其他浏览器打开", Toast.LENGTH_LONG).show()
             }
         }
         backBtn.setOnClickListener { finish() }
