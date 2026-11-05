@@ -36,7 +36,7 @@ import android.view.WindowManager
 object LockKeepOn {
 
     private const val PREF = "app_settings"
-    /** 锁屏通知常亮开关（默认关：避免装好就一直亮屏耗电，想用再开）。 */
+    /** 锁屏通知常亮开关（默认开：装好即用，想省电随手关掉就行）。 */
     private const val KEY_ON = "lockscreen_keep_on"
     private const val TAG = "LockKeepOn"
 
@@ -65,7 +65,7 @@ object LockKeepOn {
     // ---------------- 开关 ----------------
 
     fun isOn(ctx: Context): Boolean =
-        ctx.getSharedPreferences(PREF, Context.MODE_PRIVATE).getBoolean(KEY_ON, false)
+        ctx.getSharedPreferences(PREF, Context.MODE_PRIVATE).getBoolean(KEY_ON, true)
 
     fun setOn(ctx: Context, on: Boolean) {
         ctx.getSharedPreferences(PREF, Context.MODE_PRIVATE)
