@@ -168,28 +168,13 @@ def upload_apk(tag: str, apk_name: str):
 
     upload_url = (f"https://uploads.github.com/repos/{OWNER}/{REPO}/releases/"
                   f"{rel['id']}/assets?name={apk_name}")
-    res = None
-    last_err = None
-    for attempt in range(1, 13):
-        req = urllib.request.Request(upload_url, data=local_bytes, method="POST")
-        req.add_header("Authorization", f"Bearer {TOKEN}")
-        req.add_header("Accept", "application/vnd.github+json")
-        req.add_header("Content-Type", "application/vnd.android.package-archive")
-        req.add_header("User-Agent", "countdown-sync")
-        try:
-            with urllib.request.urlopen(req, timeout=600) as r:
-                res = json.loads(r.read().decode("utf-8"))
-            break
-        except (urllib.error.URLError, ssl.SSLError, http.client.IncompleteRead,
-                http.client.HTTPException, ConnectionError, OSError) as e:
-            # uploads.github.com 走代理偶发 TLS 重置 / 读响应中断，退避重试
-            last_err = e
-            print(f"  [retry {attempt}/12] APK 上传 TLS/网络抖动: {e}")
-            time.sleep(3 * attempt)
-    if res is None:
-        if last_err:
-            raise last_err
-        raise RuntimeError("APK 上传失败：无响应")
+    req = urllib.request.Request(upload_url, data=local_bytes, method="POST")
+    req.add_header("Authorization", f"Bearer {TOKEN}")
+    req.add_header("Accept", "application/vnd.github+json")
+    req.add_header("Content-Type", "application/vnd.android.package-archive")
+    req.add_header("User-Agent", "countdown-sync")
+    with urllib.request.urlopen(req, timeout=600) as r:
+        res = json.loads(r.read().decode("utf-8"))
     print(f"  本地 APK sha256: {local_sha[:16]}...")
     print(f"  [OK] 已上传 {res['name']}（{res['size']} 字节）")
     print(f"       {res.get('browser_download_url')}")
@@ -200,8 +185,8 @@ def patch_release_body(tag: str, note_line: str):
     if rel is None:
         return
     body = rel.get("body") or ""
-    if note_line:
-        new_body = note_line
+    if note_line and note_line not in body:
+        new_body = (note_line + "\n\n" + body) if body.strip() else note_line
     else:
         new_body = body
     api("PATCH", f"/repos/{OWNER}/{REPO}/releases/{rel['id']}",
@@ -254,7 +239,7 @@ def main():
     if counts["UPDATED"] == 0 and counts["NEW"] == 0 and counts["FAILED"] == 0:
         print("  => 源码已与 GitHub 完全同步")
 
-    note_line = "🎨 视觉风格还原为「液态玻璃（Liquid Glass）深色调」——深色背景 + 青色强调色 + 磨砂玻璃卡片与按钮，去掉上一版的浅色新拟态。\n🗑️ 两处精简保留：① 移除「药名库」功能（选药走「快速选择」常用项）；② 彻底删除全部「华都云境悦府」倒计时（主档 + 12~24 日 + 购房正计时），不可找回。版本 v1.0.0.63。"
+    note_line = ("🧹 v1.0.0.63：移除「华都云境悦府」整套倒计时（含购房正计时及 12~31 日各档），主界面与悬浮窗同步消失、不可找回、重装不复活；其余功能与玻璃主题风格保持不变。")
     print(f"=== 2. 上传 APK 到 Release {tag} ===")
     create_release_if_missing(tag, note_line)
     upload_apk(tag, apk_name)
