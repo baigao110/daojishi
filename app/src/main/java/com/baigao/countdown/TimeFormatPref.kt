@@ -14,9 +14,9 @@ object TimeFormatPref {
     private const val FILE = "countdown_prefs"
     private const val KEY_24H = "remark_time_24h"
 
-    /** 当前是否按 24 小时制显示（默认 24 小时制）。 */
+    /** 当前是否按 24 小时制显示（默认 12 小时制）。 */
     fun is24Hour(ctx: Context): Boolean =
-        ctx.getSharedPreferences(FILE, Context.MODE_PRIVATE).getBoolean(KEY_24H, true)
+        ctx.getSharedPreferences(FILE, Context.MODE_PRIVATE).getBoolean(KEY_24H, false)
 
     /** 保存 24 小时制开关。 */
     fun set24Hour(ctx: Context, use24: Boolean) {
