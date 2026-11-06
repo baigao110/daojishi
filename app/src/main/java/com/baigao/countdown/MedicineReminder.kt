@@ -97,6 +97,8 @@ object MedicineReminder {
     private const val KEY_LAST_NOTIFY_TIME = "last_notify_time"
 
     private const val NOTIF_ID = 20331
+    /** 常驻状态通知 id：与到点提醒的闹钟通知 NOTIF_ID 区分，二者可同时常驻、互不顶替。 */
+    private const val STATUS_NOTIF_ID = 20332
     private const val REQ_ALARM = 4111
     private const val REQ_ALARM_BACKUP = 4114
     /** 补响 1：到点后 2 分钟再试一次（主路被系统推迟 / 丢掉时兜住）。 */
@@ -580,6 +582,7 @@ object MedicineReminder {
         }
         MedicineCheckJobService.cancel(ctx)
         cancelNotification(ctx)
+        cancelStatusNotification(ctx)
     }
 
     private fun piFlags(): Int = PendingIntent.FLAG_UPDATE_CURRENT or
@@ -696,6 +699,16 @@ object MedicineReminder {
         }
     }
 
+    /** 取消「每日吃药提醒 · 已开启」常驻状态通知（与闹钟通知 id 不同，互不干扰）。 */
+    fun cancelStatusNotification(ctx: Context) {
+        try {
+            (ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
+                .cancel(STATUS_NOTIF_ID)
+        } catch (e: Throwable) {
+            // 忽略
+        }
+    }
+
     /**
      * 常驻状态通知：吃药提醒开启时显示「每日吃药提醒 · 已开启」+ 下次提醒时间；
      * 关闭时由 [syncMedicineNotification] 取消。不响铃、不震动、不弹全屏，仅作状态常驻。
@@ -723,13 +736,12 @@ object MedicineReminder {
                 .setContentTitle(title)
                 .setContentText(text)
                 .setContentIntent(openPi)
-                .setCategory(Notification.CATEGORY_ALARM)
+                .setCategory(Notification.CATEGORY_STATUS)
                 .setOngoing(true)
-                .setPriority(Notification.PRIORITY_MAX)
+                .setPriority(Notification.PRIORITY_DEFAULT)
                 .setVisibility(Notification.VISIBILITY_PUBLIC)
                 .build()
-            setAlarmShowing(ctx, false)
-            nm.notify(NOTIF_ID, n)
+            nm.notify(STATUS_NOTIF_ID, n)
         } catch (e: Throwable) {
             android.util.Log.w("MedicineReminder", "postStatusNotification: ${e.message}")
         }
@@ -763,20 +775,23 @@ object MedicineReminder {
 
     /**
      * 根据开关与提醒状态同步「每日吃药提醒」通知：
-     * - 关闭 → 取消通知；
-     * - 开启 → 不再常驻显示「已开启」状态通知（v1.0.0.37 起取消），仅清掉旧版残留；
-     *   真正到点时由 notifyNow() 弹出「该吃药了」闹钟通知，点「已吃药」后取消。
+     * - 关闭 → 取消到点提醒的闹钟通知 + 常驻状态通知；
+     * - 开启 → 发一条常驻（ongoing）状态通知「每日吃药提醒 · 已开启」+ 下次提醒时间，
+     *   即使 App 退出后台甚至被系统回收，这条通知也一直留在通知栏（点开进吃药日历）；
+     *   真正到点的「该吃药了」闹钟通知由 notifyNow() 用另一个 id 弹出，互不顶替。
      */
     fun syncMedicineNotification(ctx: Context) {
         // 昨天的闹钟通知已过期：清掉标记，让下方按今天的状态重新刷新
         val ad = alarmShowingDate(ctx)
         if (ad.isNotEmpty() && ad != todayKey()) setAlarmShowing(ctx, false)
         if (!isEnabled(ctx)) {
-            cancelNotification(ctx)   // 关闭 → 取消每日吃药提醒通知
+            cancelNotification(ctx)        // 关闭 → 取消到点提醒的闹钟通知
+            cancelStatusNotification(ctx)  // 关闭 → 同时撤掉常驻状态通知
             return
         }
-        if (alarmShowingDate(ctx).isNotEmpty()) return  // 当前闹钟通知正在展示，先不动它
-        cancelNotification(ctx)  // 已取消常驻「已开启」状态通知：清掉旧版残留，不再常驻显示
+        // 开启：保证常驻状态通知一直在（退出后台后依然留在通知栏）
+        if (alarmShowingDate(ctx).isNotEmpty()) return  // 当前「该吃药了」闹钟通知正在展示，先别动
+        postStatusNotification(ctx)        // 挂上 / 刷新常驻状态通知
     }
 
     private fun createChannel(nm: NotificationManager) {
