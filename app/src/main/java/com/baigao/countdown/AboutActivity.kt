@@ -59,6 +59,8 @@ class AboutActivity : Activity() {
     private lateinit var lockStateTv: TextView
     private lateinit var lockKeepSwitch: Switch
     private lateinit var lockKeepDescTv: TextView
+    private lateinit var medicineResidentSwitch: Switch
+    private lateinit var medicineResidentDescTv: TextView
     private lateinit var timeFormatSpinner: Spinner
     private lateinit var timeFormatDescTv: TextView
 
@@ -106,6 +108,8 @@ class AboutActivity : Activity() {
         lockStateTv = findViewById(R.id.lockStateTv)
         lockKeepSwitch = findViewById(R.id.lockKeepSwitch)
         lockKeepDescTv = findViewById(R.id.lockKeepDescTv)
+        medicineResidentSwitch = findViewById(R.id.medicineResidentSwitch)
+        medicineResidentDescTv = findViewById(R.id.medicineResidentDescTv)
         // 锁屏上看不到倒计时时的一键排障：国内 ROM 的「锁屏显示 / 静默通知」开关
         // 基本都藏在应用信息里，直接跳到本应用的应用信息页最省事。
         lockNotifyOpenBtn.setOnClickListener { openLockScreenNotifySettings() }
@@ -157,7 +161,7 @@ class AboutActivity : Activity() {
             try {
                 val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                 cm.setPrimaryClip(ClipData.newPlainText("联系方式", email))
-                Toast.makeText(this, "已复制邮箱 $email 到剪贴板，可粘贴到其他地方使用", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "已复制邮箱 $email 到剪贴板", Toast.LENGTH_SHORT).show()
             } catch (_: Exception) {
                 Toast.makeText(this, "邮箱：$email", Toast.LENGTH_LONG).show()
             }
@@ -276,6 +280,19 @@ class AboutActivity : Activity() {
                 ).show()
             }
             refreshLockKeepDesc()
+        }
+
+        // ---- 吃药常驻通知：开关控制吃药提醒是否在通知栏常驻一条状态通知 ----
+        medicineResidentSwitch.setOnCheckedChangeListener { _, checked ->
+            if (suppressSwitch) return@setOnCheckedChangeListener
+            MedicineReminder.setResidentOn(this, checked)
+            MedicineReminder.syncMedicineNotification(this)
+            Toast.makeText(
+                this,
+                if (checked) "吃药常驻通知开啦：通知栏会常驻一条吃药提醒状态（退出后台也留着）"
+                else "吃药常驻通知关啦：只在到点时弹「该吃药了」，通知栏不再常驻状态条",
+                Toast.LENGTH_SHORT
+            ).show()
         }
 
         // ---- 更新提示方式：下拉框（多选一） ----
@@ -425,6 +442,7 @@ class AboutActivity : Activity() {
         floatKeepSwitch.isChecked = ScreenKeepOn.isFloatOn(this)
         lockNotifySwitch.isChecked = LockScreenClock.isOn(this)
         lockKeepSwitch.isChecked = LockKeepOn.isOn(this)
+        medicineResidentSwitch.isChecked = MedicineReminder.isResidentOn(this)
         suppressSwitch = false
         refreshLockKeepDesc()
         lockNotifyDescTv.text =
@@ -432,6 +450,9 @@ class AboutActivity : Activity() {
                 "（标题、倒计时数字、模式、备注和悬浮窗里一模一样，颜色也跟着主题走，每秒跳秒）；\n" +
                 "把开关关掉，这些锁屏通知就一起收掉啦。\n" +
                 "锁屏上看不到的活，点下面的「锁屏上看不到？点我打开锁屏通知设置」就行啦。"
+        medicineResidentDescTv.text =
+            "吃药常驻通知：吃药提醒总开关开启后才生效。开 → 通知栏常驻一条「每日吃药提醒 · 已开启」状态（含下次提醒时间），" +
+                "App 退出后台甚至被系统回收后也一直留着；关 → 不挂常驻状态条，只在到点时弹「该吃药了」闹钟通知。"
         refreshLockState()
     }
 
