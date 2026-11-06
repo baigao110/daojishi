@@ -89,8 +89,12 @@ class AddEditActivity : Activity() {
         // 这条倒计时在编辑 / 准备生成的类型（显示模式清单、提示音开关全按它走）。
         // v162：界面上这一级只分「普通 / 内置」两格 —— 新建、重装、首次装一律默认普通，
         // 不记上次挑的那一档；只有编辑已有条目时才带出它自己原来的类型。
-        // 新建时先给个「每小时」兜底：用户下一步真去点「内置倒计时」，就落在这一档上。
-        var pickedBuiltIn: Int = c?.builtIn ?: BuiltIn.HOUR
+        // v170 修正：新建一律默认「普通倒计时」（NONE）。「每小时」这一档的兜底交给下面
+        // builtInSpinner 的 onItemSelected —— 用户真去点「内置倒计时」时才落到 HOUR。
+        // 早先这里写成「?: BuiltIn.HOUR」，导致新建倒计时一打开就停在「内置倒计时」，
+        // 于是「是否循环」被锁死（内置档由档位定死、不许改），点保存又总撞上已存在的
+        // 默认 HOUR 内置项而报「该倒计时已存在，生成失败！」。
+        var pickedBuiltIn: Int = c?.builtIn ?: BuiltIn.NONE
 
         colorSpinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, colorNames)
         (colorSpinner.adapter as ArrayAdapter<*>).setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
