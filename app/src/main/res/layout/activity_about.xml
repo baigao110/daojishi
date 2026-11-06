@@ -345,6 +345,33 @@
             android:textSize="12sp"
             android:text="" />
 
+        <!-- 吃药常驻通知：吃药提醒开启时，是否在通知栏常驻一条状态通知（退出后台也保留） -->
+        <LinearLayout
+            style="@style/SettingRow"
+            android:layout_marginTop="12dp">
+
+            <TextView
+                style="@style/SettingLabel"
+                android:text="吃药常驻通知" />
+
+            <Switch
+                android:id="@+id/medicineResidentSwitch"
+                style="@style/GlassSwitch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/medicineResidentDescTv"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            android:lineSpacingExtra="3dp"
+            android:textColor="#FFEAF6FF"
+            android:textSize="12sp"
+            android:text="" />
+
         <!-- 更新提示方式：多选项改为下拉框选择 -->
         <LinearLayout
             style="@style/SettingRow"
