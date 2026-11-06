@@ -66,6 +66,8 @@ object MedicineReminder {
 
     private const val PREF = "medicine_reminder"
     private const val KEY_ENABLED = "enabled"
+    /** 吃药常驻通知开关（默认开：状态通知常驻；关掉则只到点弹闹钟、不常驻状态条）。 */
+    private const val KEY_RESIDENT_ON = "resident_on"
     private const val KEY_HOUR = "hour"
     private const val KEY_MINUTE = "minute"
     private const val KEY_TIMES_PER_DAY = "times_per_day"
@@ -127,6 +129,15 @@ object MedicineReminder {
     // ---------------- 开关与提醒时间 ----------------
 
     fun isEnabled(ctx: Context): Boolean = prefs(ctx).getBoolean(KEY_ENABLED, false)
+
+    /** 吃药常驻通知开关（默认开：App 退出后台后状态通知仍常驻；关掉则只在到点时弹闹钟）。 */
+    fun isResidentOn(ctx: Context): Boolean = prefs(ctx).getBoolean(KEY_RESIDENT_ON, true)
+
+    fun setResidentOn(ctx: Context, on: Boolean) {
+        prefs(ctx).edit().putBoolean(KEY_RESIDENT_ON, on).apply()
+        syncMedicineNotification(ctx)
+    }
+
     fun hour(ctx: Context): Int = prefs(ctx).getInt(KEY_HOUR, 9)
     fun minute(ctx: Context): Int = prefs(ctx).getInt(KEY_MINUTE, 0)
 
@@ -775,23 +786,30 @@ object MedicineReminder {
 
     /**
      * 根据开关与提醒状态同步「每日吃药提醒」通知：
-     * - 关闭 → 取消到点提醒的闹钟通知 + 常驻状态通知；
-     * - 开启 → 发一条常驻（ongoing）状态通知「每日吃药提醒 · 已开启」+ 下次提醒时间，
-     *   即使 App 退出后台甚至被系统回收，这条通知也一直留在通知栏（点开进吃药日历）；
-     *   真正到点的「该吃药了」闹钟通知由 notifyNow() 用另一个 id 弹出，互不顶替。
+     * - 提醒总开关关闭 → 取消到点提醒的闹钟通知 + 常驻状态通知；
+     * - 提醒总开关开启、且「吃药常驻通知」开启 → 发一条常驻（ongoing）状态通知
+     *   「每日吃药提醒 · 已开启」+ 下次提醒时间，即使 App 退出后台甚至被系统回收，
+     *   这条通知也一直留在通知栏（点开进吃药日历）；
+     * - 提醒总开关开启、但「吃药常驻通知」关闭 → 只保留到点时的「该吃药了」闹钟通知，
+     *   不挂常驻状态条；
+     *   真正到点的闹钟通知由 notifyNow() 用另一个 id 弹出，互不顶替。
      */
     fun syncMedicineNotification(ctx: Context) {
         // 昨天的闹钟通知已过期：清掉标记，让下方按今天的状态重新刷新
         val ad = alarmShowingDate(ctx)
         if (ad.isNotEmpty() && ad != todayKey()) setAlarmShowing(ctx, false)
         if (!isEnabled(ctx)) {
-            cancelNotification(ctx)        // 关闭 → 取消到点提醒的闹钟通知
-            cancelStatusNotification(ctx)  // 关闭 → 同时撤掉常驻状态通知
+            cancelNotification(ctx)        // 提醒总开关关闭 → 取消到点提醒的闹钟通知
+            cancelStatusNotification(ctx)  // 提醒总开关关闭 → 同时撤掉常驻状态通知
             return
         }
-        // 开启：保证常驻状态通知一直在（退出后台后依然留在通知栏）
-        if (alarmShowingDate(ctx).isNotEmpty()) return  // 当前「该吃药了」闹钟通知正在展示，先别动
-        postStatusNotification(ctx)        // 挂上 / 刷新常驻状态通知
+        // 当前「该吃药了」闹钟通知正在展示时，先别动它
+        if (alarmShowingDate(ctx).isNotEmpty()) return
+        if (isResidentOn(ctx)) {
+            postStatusNotification(ctx)    // 吃药常驻通知开启 → 挂上 / 刷新常驻状态通知
+        } else {
+            cancelStatusNotification(ctx)  // 吃药常驻通知关闭 → 撤掉常驻状态通知（到点闹钟通知仍由各档 notifyNow 弹出）
+        }
     }
 
     private fun createChannel(nm: NotificationManager) {
