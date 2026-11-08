@@ -63,6 +63,8 @@ object MedicineReminder {
     private const val KEY_ALARM_DATE = "alarm_showing_date"
     const val ACTION_ALARM = "com.baigao.countdown.action.MEDICINE_ALARM"
     const val ACTION_TAKEN = "com.baigao.countdown.action.MEDICINE_TAKEN"
+    /** 「复活闹钟」：划掉应用卡片 / 守护服务被销毁后，由它把闹钟与守护服务重新接上。 */
+    const val ACTION_REVIVE = "com.baigao.countdown.action.MEDICINE_REVIVE"
 
     private const val PREF = "medicine_reminder"
     private const val KEY_ENABLED = "enabled"
@@ -114,6 +116,12 @@ object MedicineReminder {
     private const val REQ_OPEN = 4113
     /** 全屏意图（息屏时直接弹吃药页）用的请求码。 */
     private const val REQ_FULL = 4119
+    /** 每小时守护闹钟：只要有任何一路还活着，就能在 1 小时内把全链路自愈回来。 */
+    private const val REQ_ALARM_WATCHDOG = 4120
+    /** 复活闹钟：划掉卡片 / 服务被销毁后 1.5 秒触发，把守护服务重新拉起。 */
+    private const val REQ_REVIVE = 4121
+    /** 上次「到点却因没有通知权限被拦下」的时刻（自检页显示用）。 */
+    private const val KEY_LAST_BLOCKED = "last_blocked"
 
     private fun prefs(ctx: Context) = ctx.getSharedPreferences(PREF, Context.MODE_PRIVATE)
 
@@ -292,7 +300,13 @@ object MedicineReminder {
 
     fun setEnabled(ctx: Context, enabled: Boolean) {
         prefs(ctx).edit().putBoolean(KEY_ENABLED, enabled).apply()
-        if (enabled) { schedule(ctx); syncMedicineNotification(ctx) } else cancel(ctx)
+        if (enabled) {
+            schedule(ctx)
+            // 开启的同时把守护前台服务拉起来：这一步在 Activity 里调用，是 Android 12+
+            // 明确允许启动前台服务的时机；之后即使划掉卡片，闹钟也还在。
+            MedicineGuardService.start(ctx)
+            syncMedicineNotification(ctx)
+        } else cancel(ctx)
     }
 
     fun setTime(ctx: Context, hour: Int, minute: Int) {
@@ -410,14 +424,12 @@ object MedicineReminder {
         val pi = alarmPi(ctx)
 
         // ① 系统闹钟：优先级最高，Doze 也能按时唤起，且不需要精确闹钟权限
-        var ok = false
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 am.setAlarmClock(AlarmManager.AlarmClockInfo(trigger, showPi(ctx)), pi)
             } else {
                 am.set(AlarmManager.RTC_WAKEUP, trigger, pi)
             }
-            ok = true
         } catch (e: Throwable) {
             try {
                 // 退而求其次：精确闹钟（Android 12+ 需要权限，没权限会抛异常）
@@ -426,9 +438,8 @@ object MedicineReminder {
                 } else {
                     am.set(AlarmManager.RTC_WAKEUP, trigger, pi)
                 }
-                ok = true
             } catch (e2: Throwable) {
-                // 两条精确路都走不通，下面那条重复闹钟一定还在
+                // 两条精确路都走不通，下面的重复闹钟 + 守护闹钟一定还在
             }
         }
 
@@ -445,8 +456,9 @@ object MedicineReminder {
 
         // ③ 每天重复的非精确闹钟：不依赖精确闹钟权限，也不容易被 ROM 当成「精确闹钟」拦下。
         //    它与 ①② 同一天都会触发，但 maybeNotify() 保证一天只发一次通知。
+        //    备路**始终保留**：以前这里写着「主路成功就撤掉备路」，紧接着又原样挂上，
+        //    自相矛盾；ROM 把主路清掉时，这条备路往往是唯一的兜底。
         try {
-            if (ok) am.cancel(backupPi(ctx))
             am.setRepeating(
                 AlarmManager.RTC_WAKEUP, trigger, AlarmManager.INTERVAL_DAY, backupPi(ctx)
             )
@@ -472,6 +484,24 @@ object MedicineReminder {
         // ⑤ JobScheduler 巡检：闹钟被清掉时补挂、错过就补发
         MedicineCheckJobService.schedule(ctx)
 
+        // ⑥ 每小时守护闹钟：只要还有任意一路闹钟活着，1 小时内就能把全链路自愈回来
+        //    （onAlarm → schedule → 重挂全部闹钟 + 巡检 + 确认守护服务在跑）。
+        //    maybeNotify() 按「今天该响的剂次」去重，每小时触发不会变成每小时打扰。
+        //    起点固定取下一个整点，避免每次重挂都把周期往后推。
+        try {
+            val nextHour = Calendar.getInstance().apply {
+                add(Calendar.HOUR_OF_DAY, 1)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }.timeInMillis
+            am.setRepeating(
+                AlarmManager.RTC_WAKEUP, nextHour, AlarmManager.INTERVAL_HOUR, watchdogPi(ctx)
+            )
+        } catch (e: Throwable) {
+            // 忽略
+        }
+
         try {
             prefs(ctx).edit().putLong(KEY_LAST_SCHEDULE, System.currentTimeMillis()).apply()
         } catch (e: Throwable) {
@@ -479,32 +509,38 @@ object MedicineReminder {
         }
     }
 
-    /** 闹钟响了：先把下一次排上（幂等），再发通知；手动改的那次由 maybeNotify 兑现后再作废。 */
+    /** 闹钟响了：先把下一次排上（幂等），再发通知；手动改的那次由 maybeNotify 兑现后再作废。
+     *  顺手确认守护服务还活着 —— 每小时守护闹钟、补响、备路都会经过这里，
+     *  于是任何一路活着就能把整条链路自愈回来。 */
     fun onAlarm(ctx: Context) {
         if (!isEnabled(ctx)) {
             cancel(ctx)
             return
         }
         schedule(ctx)
+        MedicineGuardService.start(ctx)
         maybeNotify(ctx)
         syncMedicineNotification(ctx)
     }
 
-    /** JobScheduler 巡检：补挂闹钟 + 错过就补发。 */
+    /** JobScheduler 巡检：补挂闹钟 + 错过就补发 + 确认守护服务在跑。 */
     fun onPeriodicCheck(ctx: Context) {
         if (!isEnabled(ctx)) return
         ensureAlarms(ctx)
+        MedicineGuardService.start(ctx)
         maybeNotify(ctx)
         syncMedicineNotification(ctx)
     }
 
     /**
      * 打开 App 时补一次：今天该提醒的时刻已经过了、却又没提醒过（关机、闹钟被清、
-     * 系统推迟等），立刻补一条通知，免得整天都不响。
+     * 系统推迟等），立刻补一条通知，免得整天都不响。Activity 在前台，也正是拉起
+     * 守护前台服务最稳妥的时机。
      */
     fun catchUp(ctx: Context) {
         if (!isEnabled(ctx)) return
         schedule(ctx)
+        MedicineGuardService.start(ctx)
         maybeNotify(ctx)
         syncMedicineNotification(ctx)
     }
@@ -542,6 +578,14 @@ object MedicineReminder {
             if (doseIndex < 0) doseIndex = 0
         }
         if (!UpdateNotifier.hasPermission(ctx)) {
+            // 以前这里静默 return，自检页完全看不出「到点了却被权限拦下」。
+            // 留个时间戳，用户一眼能分清「压根没响」和「响了被系统吞掉」。
+            try {
+                prefs(ctx).edit().putLong(KEY_LAST_BLOCKED, now).apply()
+            } catch (e: Throwable) {
+                // 忽略
+            }
+            android.util.Log.w("MedicineReminder", "maybeNotify: 没有通知权限，已跳过")
             if (customDue) {
                 clearNextCustom(ctx)
                 schedule(ctx)
@@ -580,6 +624,80 @@ object MedicineReminder {
         return -1
     }
 
+    /**
+     * 守护服务被划掉卡片 / 销毁时的最后一搏：立即把全部闹钟重挂一遍，并排一个
+     * 1.5 秒后的系统闹钟把守护服务重新拉起来。
+     *
+     * 这里**不直接**启动前台服务：进程正在被清理，Android 12+ 会拦下后台启动前台服务。
+     * 交给 AlarmManager 的复活广播去做，成功率高得多；即便服务拉不起来，闹钟也已经
+     * 挂好了，到点照样由 MedicineAlarmReceiver 发通知。
+     */
+    fun onGuardRevive(ctx: Context) {
+        if (!isEnabled(ctx)) return
+        try {
+            ensureAlarms(ctx)
+        } catch (e: Throwable) {
+            // 忽略
+        }
+        try {
+            val am = ctx.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            val at = System.currentTimeMillis() + 1500L
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                am.setAlarmClock(AlarmManager.AlarmClockInfo(at, showPi(ctx)), revivePi(ctx))
+            } else {
+                am.set(AlarmManager.RTC_WAKEUP, at, revivePi(ctx))
+            }
+        } catch (e: Throwable) {
+            try {
+                (ctx.getSystemService(Context.ALARM_SERVICE) as AlarmManager)
+                    .set(
+                        AlarmManager.RTC_WAKEUP,
+                        System.currentTimeMillis() + 1500L,
+                        revivePi(ctx)
+                    )
+            } catch (e2: Throwable) {
+                // 忽略
+            }
+        }
+    }
+
+    /** 复活闹钟响了：重挂闹钟 + 把守护服务拉回来 + 刷新状态通知。 */
+    fun onRevive(ctx: Context) {
+        if (!isEnabled(ctx)) return
+        schedule(ctx)
+        MedicineGuardService.start(ctx)
+        syncMedicineNotification(ctx)
+    }
+
+    /** 每小时守护闹钟：与主路同一个 action，onAlarm 会重挂全链路，maybeNotify 会去重。 */
+    private fun watchdogPi(ctx: Context): PendingIntent = PendingIntent.getBroadcast(
+        ctx, REQ_ALARM_WATCHDOG,
+        Intent(ctx, MedicineAlarmReceiver::class.java).setAction(ACTION_ALARM),
+        piFlags()
+    )
+
+    /** 复活闹钟：划掉卡片 / 服务被销毁后触发 ACTION_REVIVE。 */
+    private fun revivePi(ctx: Context): PendingIntent = PendingIntent.getBroadcast(
+        ctx, REQ_REVIVE,
+        Intent(ctx, MedicineAlarmReceiver::class.java).setAction(ACTION_REVIVE),
+        piFlags()
+    )
+
+    /** 自检页：守护服务是否正在运行。 */
+    fun guardStatusText(ctx: Context): String =
+        if (MedicineGuardService.isRunning(ctx)) {
+            "守护服务：运行中（划掉应用卡片也能提醒）"
+        } else {
+            "守护服务：未运行（重新打开一次应用就会自动拉起）"
+        }
+
+    /** 自检页：上次「到点了却因为没有通知权限被拦下」的时刻；没被拦过返回空串。 */
+    fun lastBlockedText(ctx: Context): String {
+        val t = prefs(ctx).getLong(KEY_LAST_BLOCKED, 0L)
+        if (t <= 0L) return ""
+        return SimpleDateFormat("MM-dd HH:mm", Locale.getDefault()).format(Date(t))
+    }
+
     fun cancel(ctx: Context) {
         try {
             val am = ctx.getSystemService(Context.ALARM_SERVICE) as AlarmManager
@@ -588,10 +706,13 @@ object MedicineReminder {
             am.cancel(exactPi(ctx))
             am.cancel(retry1Pi(ctx))
             am.cancel(retry2Pi(ctx))
+            am.cancel(watchdogPi(ctx))
+            am.cancel(revivePi(ctx))
         } catch (e: Throwable) {
             // 忽略
         }
         MedicineCheckJobService.cancel(ctx)
+        MedicineGuardService.stop(ctx)
         cancelNotification(ctx)
         cancelStatusNotification(ctx)
     }
