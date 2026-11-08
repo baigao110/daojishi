@@ -88,6 +88,9 @@ class MedicineReminderActivity : Activity() {
                     Toast.LENGTH_SHORT
                 ).show()
             }
+            // 开启时一次性引导「允许后台运行」：代码这一侧已经做满，
+            // 划掉卡片后能否提醒，最后就差系统把本应用放进后台白名单这一步。
+            if (checked) maybeGuideBackground()
             refreshMedicine()
         }
         medTimeBtn.setOnClickListener { showDoseEditor() }
@@ -191,6 +194,42 @@ class MedicineReminderActivity : Activity() {
         DoseEditor.showDialog(this) { refreshMedicine() }
     }
 
+    /**
+     * 开启提醒时一次性引导「允许后台运行」。
+     * 划掉卡片后能否提醒，代码这一侧已经做满（守护前台服务 + 复活闹钟），
+     * 最后就差系统把本应用放进后台白名单这一步，用户不点就永远补不上。
+     */
+    private fun maybeGuideBackground() {
+        if (!batteryOptimized()) return
+        val sp = getSharedPreferences("medicine_bg_guide", android.content.Context.MODE_PRIVATE)
+        if (sp.getBoolean("shown", false)) return
+        sp.edit().putBoolean("shown", true).apply()
+        if (isFinishing) return
+        UpdateManager.showStyledDialog(
+            activity = this,
+            title = "让提醒像闹钟一样准时",
+            positiveText = "去允许后台运行",
+            negativeText = "以后再说",
+            cancelable = true,
+            onPositive = { requestIgnoreBattery() }
+        ) { host ->
+            val tv = TextView(this).apply {
+                text = "吃药提醒已经挂好啦，从最近任务划掉应用卡片也能按时提醒。\n\n" +
+                        "不过部分手机会冻结后台应用，想万无一失的话，请顺手把本应用的" +
+                        "「电池优化」关掉，并在系统设置里允许「自启动 / 后台运行」。"
+                setTextColor(android.graphics.Color.parseColor("#FFE4EEFF"))
+                textSize = 13f
+                setLineSpacing(4f, 1.2f)
+                setShadowLayer(2f, 0f, 1f, android.graphics.Color.parseColor("#CC000000"))
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+            }
+            host.addView(tv)
+        }
+    }
+
     /** 吃药提醒自检：退出 / 关闭 App 后不提醒，基本都能在这里看出卡在哪一环。 */
     private fun showMedicineSelfCheck() {
         if (isFinishing) return
@@ -207,6 +246,11 @@ class MedicineReminderActivity : Activity() {
         )
         lines.add("闹钟挂好啦：${MedicineReminder.lastScheduleText(this)}")
         lines.add("上一次发出提醒：${MedicineReminder.lastNotifyText(this)}")
+        lines.add(MedicineReminder.guardStatusText(this))
+        val blocked = MedicineReminder.lastBlockedText(this)
+        if (blocked.isNotEmpty()) {
+            lines.add("上次到点被通知权限拦下：$blocked（记得去开通知权限哦）")
+        }
         lines.add(
             if (UpdateNotifier.hasPermission(this)) "通知权限：已经开啦"
             else "通知权限：还没开（一定要开，不然根本弹不出来）"
@@ -217,8 +261,10 @@ class MedicineReminderActivity : Activity() {
         )
         lines.add(if (batteryOptimized()) "电池优化：还没关（建议关掉哦）" else "电池优化：已经关掉啦")
         lines.add("")
-        lines.add("已经做了四重保障哦：系统闹钟 + 精确闹钟 + 每日重复闹钟 +")
-        lines.add("两路后台巡检（到点后 2 分钟 / 30 分钟还会各补响一次）。")
+        lines.add("后台守护已开启：常驻前台服务 + 系统闹钟 + 精确闹钟 +")
+        lines.add("每日重复闹钟 + 每小时守护 + 15 分钟巡检；划掉应用卡片")
+        lines.add("会立刻重挂闹钟并把守护服务复活回来，像系统闹钟一样接着提醒。")
+        lines.add("通知栏那条「吃药提醒守护中」是静默常驻的，别把它关掉哦。")
         // 通知体检：把「权限 / 渠道 / 后台」这些看不见的闸门一并告知，
         // 否则用户只能猜——而这些环节任何一个断了，代码层面都是彻底静默的。
         val bad = NotifyGuard.lines(this).filter { it.startsWith("✖") }
@@ -228,9 +274,9 @@ class MedicineReminderActivity : Activity() {
             lines.add("通知体检：有 ${bad.size} 项会挡住通知——")
             bad.forEach { lines.add("  $it") }
         }
-        lines.add("要是还是不提醒，多半是手机把本应用「强制停止」了：")
-        lines.add("  1. 别从最近任务里划掉本应用的卡片（或在最近任务里给它加个锁哦）；")
-        lines.add("  2. 系统设置 → 应用管理 → 本应用，把「自启动 / 后台运行」打开哦；")
+        lines.add("现在从最近任务划掉卡片也能提醒啦；要是还收不到，多半是系统限制：")
+        lines.add("  1. 系统设置 → 应用管理 → 本应用，把「自启动 / 后台运行」打开哦；")
+        lines.add("  2. 关掉电池优化、给本应用加「后台锁定 / 后台保护」；")
         lines.add("  3. 重新打开一次本应用，错过的提醒会自动补上哒。")
         val needBattery = batteryOptimized()
         UpdateManager.showStyledDialog(
@@ -268,15 +314,15 @@ class MedicineReminderActivity : Activity() {
             "下次提醒已经设为 $time（只影响这一次，响过就自动回到常规）",
             "",
             "为了到点一定能收到，已经做了这些：",
-            "  1. 系统闹钟 + 精确闹钟（同一时刻双路，能穿透省电模式哦）",
-            "  2. 到点后 2 分钟、30 分钟各补响一次",
-            "  3. 后台每 15 分钟巡检一次，闹钟没了会补挂、错过会补上",
-            "  4. 重新打开本应用时，漏掉的提醒立刻补上哒",
+            "  1. 常驻前台守护服务（划掉应用卡片会立刻重挂并自动复活）",
+            "  2. 系统闹钟 + 精确闹钟（同一时刻双路，能穿透省电模式哦）",
+            "  3. 每小时守护 + 15 分钟巡检，闹钟没了会补挂、错过会补上",
+            "  4. 到点后 2 分钟、30 分钟各补响一次，重开应用也会补发",
             "",
-            "要是这样还是收不到，一般是手机把本应用「强制停止」了：",
-            "  · 别从最近任务里划掉本应用的卡片（或在最近任务里给它加个锁）",
+            "现在划掉应用卡片也能提醒啦；要是这样还收不到，一般是系统把后台冻住了：",
             "  · 系统设置 → 应用管理 → 本应用，把「自启动 / 后台运行」打开哦",
-            "  · 把本应用的电池优化关掉哦"
+            "  · 把本应用的电池优化关掉，并给本应用加「后台锁定 / 后台保护」",
+            "  · 通知栏那条「吃药提醒守护中」别关掉哦"
         ).joinToString("\n")
         val needBattery = batteryOptimized()
         UpdateManager.showStyledDialog(
