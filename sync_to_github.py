@@ -21,6 +21,7 @@ import json
 import base64
 import hashlib
 import subprocess
+import shutil
 import time
 import urllib.request
 import urllib.error
@@ -31,7 +32,9 @@ from urllib.parse import quote
 OWNER = "baigao110"
 REPO = "daojishi"
 ROOT = os.path.dirname(os.path.abspath(__file__))
-GIT = r"C:/Users/BDJ/.workbuddy/binaries/PortableGit/versions/1.2.0/cmd/git.exe"
+# git.exe 位置会随 PortableGit 版本升级 / 环境重置而变化，写死路径会直接崩在第一步。
+# 优先用 GIT_EXE 环境变量，其次从 PATH 自动探测。
+GIT = os.environ.get("GIT_EXE") or shutil.which("git") or "git"
 
 TOKEN = os.environ.get("GH_TOKEN", "").strip()
 if not TOKEN:
