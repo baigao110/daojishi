@@ -88,6 +88,18 @@
                 android:value="countdown overlay floating window" />
         </service>
 
+        <!-- 吃药提醒守护前台服务：像系统闹钟那样，划掉应用卡片后仍能按时提醒。
+             START_STICKY + onTaskRemoved 重挂闹钟 / 排复活闹钟；Android 14 同样需要
+             specialUse 子类型说明作为 <service> 子元素，否则 startForegroundService 会崩。 -->
+        <service
+            android:name=".MedicineGuardService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="medicine reminder keeps alarms alive after app is dismissed" />
+        </service>
+
         <!-- 应用内更新：以 content:// 方式把已下载的 APK 交给系统安装器 -->
         <provider
             android:name=".ApkProvider"
@@ -114,8 +126,8 @@
             </intent-filter>
         </receiver>
 
-        <!-- 后台定期检查更新（AlarmManager 唤起，发现新版本发系统通知） -->
-        <!-- 每日吃药提醒：到点发通知，通知上的「已吃药」也走这里 -->
+        <!-- 每日吃药提醒：到点发通知 / 「已吃药」按钮 / 每小时守护 / 划掉卡片后的复活闹钟，
+             全部由 AlarmManager 的显式 PendingIntent 唤起，都是这个接收器 -->
         <receiver
             android:name=".MedicineAlarmReceiver"
             android:exported="false" />
