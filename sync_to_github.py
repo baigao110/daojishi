@@ -139,8 +139,9 @@ def sync_file(rel_api_path: str, local_path: str, max_attempts: int = 4):
                 continue
             raise
 
-        if res and not res.get("commit", {}).get("files"):
-            return "SAME"
+        # 走到这里说明前面已确认「远端内容 != 本地内容」且 PUT 成功。
+        # GitHub 的 PUT 响应有时不带 commit.files，不能据此误判成「一致」——
+        # 以前就是因为这个，文件明明传上去了，统计却显示「一致 N、更新 0」。
         return "NEW" if meta is None else "UPDATED"
 
     print(f"  [跳过] {rel_api_path} 重试 {max_attempts} 次仍未成功，请稍后重跑脚本")
