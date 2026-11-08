@@ -31,9 +31,11 @@ class BootReceiver : BroadcastReceiver() {
         } catch (e: Throwable) {
             android.util.Log.w(TAG, "alarm update: ${e.message}")
         }
-        // 重启后把每日吃药提醒重新挂上（闹钟在关机后不会保留），并恢复常驻状态通知
+        // 重启后把每日吃药提醒重新挂上（闹钟在关机后不会保留）、拉起守护前台服务，
+        // 并恢复常驻状态通知。BOOT_COMPLETED 是 Android 12+ 允许启动前台服务的时机。
         try {
             MedicineReminder.schedule(context)
+            MedicineGuardService.start(context)
             MedicineReminder.syncMedicineNotification(context)
         } catch (e: Throwable) {
             android.util.Log.w(TAG, "medicine: ${e.message}")
