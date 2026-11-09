@@ -132,6 +132,26 @@
             android:name=".MedicineAlarmReceiver"
             android:exported="false" />
 
+        <!-- 吃药提醒「系统事件自愈」：划掉卡片后本包闹钟可能被系统整体清掉，
+             亮屏 / 解锁 / 充电 / 改时间这些高频系统事件是第三方 App 唯一还能被叫醒的入口。
+             每收到一次就重挂全部闹钟并补发漏掉的剂次（幂等、按剂次去重，不会重复打扰）。
+             不注册 BOOT / LOCKED_BOOT：未解锁阶段读偏好设置会崩，那两路由 BootReceiver 负责。 -->
+        <receiver
+            android:name=".MedicineRescueReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.USER_PRESENT" />
+                <action android:name="android.intent.action.SCREEN_ON" />
+                <action android:name="android.intent.action.ACTION_POWER_CONNECTED" />
+                <action android:name="android.intent.action.ACTION_POWER_DISCONNECTED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.DATE_CHANGED" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.intent.action.LOCALE_CHANGED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
         <!-- 倒计时归零常驻通知的「停止」按钮 -->
         <receiver
             android:name=".CountdownFinishReceiver"
