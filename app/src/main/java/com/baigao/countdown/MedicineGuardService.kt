@@ -6,8 +6,10 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.os.Build
 import android.os.IBinder
 
@@ -35,12 +37,54 @@ class MedicineGuardService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
+    /** 动态注册的高频系统事件接收器（服务销毁时注销）。 */
+    private var rescueReceiver: BroadcastReceiver? = null
+
     override fun onCreate() {
         super.onCreate()
         try {
             createGuardChannel()
         } catch (e: Throwable) {
             android.util.Log.w(TAG, "channel: ${e.message}")
+        }
+        registerRescueReceiver()
+    }
+
+    /**
+     * 动态注册高频系统事件（亮屏 / 解锁 / 充电 / 改时间）。
+     * SCREEN_ON、POWER_CONNECTED 这类广播在 Android 8+ 不允许静态注册，只有常驻服务
+     * 动态注册才收得到；守护服务活着时，用户每点亮一次屏幕就把整条闹钟链重挂一遍，
+     * 顺带补发漏掉的剂次。onRescue() 不拉前台服务，不会造成自激。
+     */
+    private fun registerRescueReceiver() {
+        val r = object : BroadcastReceiver() {
+            override fun onReceive(c: Context, i: Intent) {
+                try {
+                    MedicineReminder.onRescue(c)
+                } catch (e: Throwable) {
+                    android.util.Log.w(TAG, "rescue: ${e.message}")
+                }
+            }
+        }
+        val f = IntentFilter().apply {
+            addAction(Intent.ACTION_SCREEN_ON)
+            addAction(Intent.ACTION_USER_PRESENT)
+            addAction(Intent.ACTION_POWER_CONNECTED)
+            addAction(Intent.ACTION_POWER_DISCONNECTED)
+            addAction(Intent.ACTION_TIME_CHANGED)
+            addAction(Intent.ACTION_DATE_CHANGED)
+            addAction(Intent.ACTION_TIMEZONE_CHANGED)
+        }
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                registerReceiver(r, f, Context.RECEIVER_NOT_EXPORTED)
+            } else {
+                @Suppress("UnspecifiedRegisterReceiverFlag")
+                registerReceiver(r, f)
+            }
+            rescueReceiver = r
+        } catch (e: Throwable) {
+            android.util.Log.w(TAG, "registerRescue: ${e.message}")
         }
     }
 
@@ -94,6 +138,12 @@ class MedicineGuardService : Service() {
 
     /** 服务被销毁（系统回收 / 一键清理）：同样留一次重挂机会。 */
     override fun onDestroy() {
+        try {
+            rescueReceiver?.let { unregisterReceiver(it) }
+        } catch (e: Throwable) {
+            // 忽略
+        }
+        rescueReceiver = null
         try {
             if (MedicineReminder.isEnabled(this)) MedicineReminder.onGuardRevive(this)
         } catch (e: Throwable) {
