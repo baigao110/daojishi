@@ -30,3 +30,15 @@ _apk_stale_trash/
 
 # 本地 agent 记忆（含密钥，绝不入库）
 .workbuddy/
+
+# ---- 本地同步 / 构建工具与日志：不属于倒计时本体，不入库、不上传 GitHub ----
+sync_to_github.py
+sync_v178.py
+sync_v178.log
+同步到GitHub.bat
+build_apk.bat
+patch_docs.py
+_restore.log
+_tmp_fix_release.py
+.gh_token
+*.log
