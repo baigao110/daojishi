@@ -35,6 +35,8 @@ class BootReceiver : BroadcastReceiver() {
         // 并恢复常驻状态通知。BOOT_COMPLETED 是 Android 12+ 允许启动前台服务的时机。
         try {
             MedicineReminder.schedule(context)
+            // 开机 / 解锁 / 改时间后顺手补发漏掉的剂次（关机期间、闹钟被清时最容易漏）
+            MedicineReminder.maybeNotify(context)
             MedicineGuardService.start(context)
             MedicineReminder.syncMedicineNotification(context)
         } catch (e: Throwable) {
