@@ -120,6 +120,14 @@ object MedicineReminder {
     private const val REQ_ALARM_WATCHDOG = 4120
     /** 复活闹钟：划掉卡片 / 服务被销毁后 1.5 秒触发，把守护服务重新拉起。 */
     private const val REQ_REVIVE = 4121
+    /**
+     * 每个剂次各自一条「系统级闹钟」的请求码起点（4130..4133）。
+     * 以前只挂最近的一剂，后面几剂要等前一剂响了才会重挂 —— 这一路被 ROM 丢掉或推迟，
+     * 当天后面的剂次就全没了。现在未来 24 小时内的每一剂都有独立的闹钟。
+     */
+    private const val REQ_DOSE_BASE = 4130
+    /** 每 30 分钟一趟、能穿透 Doze 的精确守护闹钟。 */
+    private const val REQ_WATCHDOG_EXACT = 4134
     /** 上次「到点却因没有通知权限被拦下」的时刻（自检页显示用）。 */
     private const val KEY_LAST_BLOCKED = "last_blocked"
 
@@ -423,6 +431,30 @@ object MedicineReminder {
         val am = ctx.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val pi = alarmPi(ctx)
 
+        // ⓪ 每一剂各自挂一条 setAlarmClock：这是「无法及时收到」的关键修复。
+        //     旧实现只挂「最近的一剂」，后面全部围绕这一个点；一旦这一路被系统丢掉或
+        //     推迟到 Doze 维护窗口，当天后面的剂次就再也没机会挂上了。现在未来 24 小时
+        //     内的每一剂都有独立的系统级闹钟（与系统闹钟同一通路，能穿透 Doze），互不依赖。
+        //     用户手动改过「下次提醒」时保持原行为，只走主路，避免多响一次。
+        if (nextCustomMillis(ctx) <= System.currentTimeMillis()) {
+            try {
+                val nowDose = System.currentTimeMillis()
+                val doses = todayDoseMillis(ctx)
+                for (i in doses.indices) {
+                    val t0 = doses[i]
+                    val t = if (t0 > nowDose) t0 else t0 + 24 * 60 * 60 * 1000L
+                    if (t - nowDose > 24 * 60 * 60 * 1000L) continue
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        am.setAlarmClock(AlarmManager.AlarmClockInfo(t, showPi(ctx)), dosePi(ctx, i))
+                    } else {
+                        am.set(AlarmManager.RTC_WAKEUP, t, dosePi(ctx, i))
+                    }
+                }
+            } catch (e: Throwable) {
+                // 个别 ROM 限制闹钟数量时，主路与其余各路仍然在
+            }
+        }
+
         // ① 系统闹钟：优先级最高，Doze 也能按时唤起，且不需要精确闹钟权限
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -470,13 +502,13 @@ object MedicineReminder {
         //    走的是同一个 action，maybeNotify() 保证一天只发一条通知，不会重复打扰。
         try {
             am.cancel(retry1Pi(ctx))
-            am.set(AlarmManager.RTC_WAKEUP, trigger + 2 * 60 * 1000L, retry1Pi(ctx))
+            setExactCompat(am, trigger + 2 * 60 * 1000L, retry1Pi(ctx))
         } catch (e: Throwable) {
             // 忽略
         }
         try {
             am.cancel(retry2Pi(ctx))
-            am.set(AlarmManager.RTC_WAKEUP, trigger + 30 * 60 * 1000L, retry2Pi(ctx))
+            setExactCompat(am, trigger + 30 * 60 * 1000L, retry2Pi(ctx))
         } catch (e: Throwable) {
             // 忽略
         }
@@ -500,6 +532,32 @@ object MedicineReminder {
             )
         } catch (e: Throwable) {
             // 忽略
+        }
+
+        // ⑦ 精确守护：上面的 setRepeating 在 Doze 下会被推迟到维护窗口，只能算「最后兜底」。
+        //    这条 setAlarmClock 挂到下一个整点 / 半点，能真正穿透 Doze；每响一趟 onAlarm
+        //    都会重挂全链路并重排下一趟，于是每 30 分钟都有一次确定性的自愈机会。
+        //    maybeNotify() 按剂次去重，不会变成每半小时打扰一次。
+        try {
+            val nextHalf = Calendar.getInstance().apply {
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+                if (get(Calendar.MINUTE) < 30) {
+                    set(Calendar.MINUTE, 30)
+                } else {
+                    add(Calendar.HOUR_OF_DAY, 1)
+                    set(Calendar.MINUTE, 0)
+                }
+            }.timeInMillis
+            am.setAlarmClock(
+                AlarmManager.AlarmClockInfo(nextHalf, showPi(ctx)), watchdogExactPi(ctx)
+            )
+        } catch (e: Throwable) {
+            try {
+                setExactCompat(am, System.currentTimeMillis() + 30 * 60 * 1000L, watchdogExactPi(ctx))
+            } catch (e2: Throwable) {
+                // 忽略
+            }
         }
 
         try {
@@ -530,6 +588,33 @@ object MedicineReminder {
         MedicineGuardService.start(ctx)
         maybeNotify(ctx)
         syncMedicineNotification(ctx)
+    }
+
+    /**
+     * 系统事件（亮屏 / 解锁 / 充电 / 改时间）一到就跑的自愈入口：
+     * 划掉卡片后本包的闹钟可能被系统全部清掉，这些高频系统事件是第三方 App 唯一
+     * 还能被叫醒的机会 —— 每次都把全链路重挂一遍，并补发漏掉的剂次。
+     *
+     * 与 [onPeriodicCheck] 的区别：这里**不**拉前台服务（服务本来就在跑，或此时从
+     * 广播启动前台服务会被 Android 12+ 拒绝），只重挂闹钟，开销更小、不会自激。
+     */
+    fun onRescue(ctx: Context) {
+        if (!isEnabled(ctx)) return
+        try {
+            ensureAlarms(ctx)
+        } catch (e: Throwable) {
+            // 忽略
+        }
+        try {
+            maybeNotify(ctx)
+        } catch (e: Throwable) {
+            // 忽略
+        }
+        try {
+            syncMedicineNotification(ctx)
+        } catch (e: Throwable) {
+            // 忽略
+        }
     }
 
     /**
@@ -670,6 +755,36 @@ object MedicineReminder {
     }
 
     /** 每小时守护闹钟：与主路同一个 action，onAlarm 会重挂全链路，maybeNotify 会去重。 */
+    /** 第 i 剂独立的系统级闹钟（请求码互不冲突，不会互相覆盖）。 */
+    private fun dosePi(ctx: Context, i: Int): PendingIntent = PendingIntent.getBroadcast(
+        ctx, REQ_DOSE_BASE + i,
+        Intent(ctx, MedicineAlarmReceiver::class.java).setAction(ACTION_ALARM),
+        piFlags()
+    )
+
+    /** 每 30 分钟一趟的精确守护闹钟。 */
+    private fun watchdogExactPi(ctx: Context): PendingIntent = PendingIntent.getBroadcast(
+        ctx, REQ_WATCHDOG_EXACT,
+        Intent(ctx, MedicineAlarmReceiver::class.java).setAction(ACTION_ALARM),
+        piFlags()
+    )
+
+    /**
+     * 尽量用能穿透 Doze 的精确闹钟；拿不到「精确闹钟」权限的机型自动退回普通 set，
+     * 保证补响这条路不会因为一句异常就整个消失。
+     */
+    private fun setExactCompat(am: AlarmManager, at: Long, pi: PendingIntent) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            try {
+                am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, pi)
+                return
+            } catch (e: Throwable) {
+                // 落到下面的普通 set
+            }
+        }
+        am.set(AlarmManager.RTC_WAKEUP, at, pi)
+    }
+
     private fun watchdogPi(ctx: Context): PendingIntent = PendingIntent.getBroadcast(
         ctx, REQ_ALARM_WATCHDOG,
         Intent(ctx, MedicineAlarmReceiver::class.java).setAction(ACTION_ALARM),
@@ -707,7 +822,9 @@ object MedicineReminder {
             am.cancel(retry1Pi(ctx))
             am.cancel(retry2Pi(ctx))
             am.cancel(watchdogPi(ctx))
+            am.cancel(watchdogExactPi(ctx))
             am.cancel(revivePi(ctx))
+            for (i in doseTimes(ctx).indices) am.cancel(dosePi(ctx, i))
         } catch (e: Throwable) {
             // 忽略
         }
