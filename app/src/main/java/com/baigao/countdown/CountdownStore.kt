@@ -13,6 +13,12 @@ import java.util.UUID
 object CountdownStore {
     private const val FILE = "countdowns.json"
 
+    /**
+     * 是否已有本地数据文件。false = 全新安装 / 卸载后重装 —— 这时不该残留
+     * 任何「删过某个内置倒计时」的历史标记，出厂清单要整份补齐。
+     */
+    fun hasData(context: Context): Boolean = File(context.filesDir, FILE).exists()
+
     fun load(context: Context): MutableList<Countdown> {
         val file = File(context.filesDir, FILE)
         if (!file.exists()) return mutableListOf()
