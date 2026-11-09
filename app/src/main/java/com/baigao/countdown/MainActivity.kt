@@ -57,6 +57,15 @@ class MainActivity : Activity() {
     private lateinit var removedPrefs: SharedPreferences
     private val removedBuiltIns = mutableSetOf<Int>()
 
+    /**
+     * 出厂内置档位的「已登记」快照（builtin_factory / seen_types）。
+     * 每新增一档内置倒计时，第一次启动就把它强制补回来（清掉可能残留的删除 /
+     * 完成使命标记），之后不再干预 —— 用户手动删掉的内置项照旧不自动复活。
+     * 于是「新增内置倒计时」随 APK 出厂：重装 / 新装 / 升级后一定在列表里。
+     */
+    private lateinit var factoryPrefs: SharedPreferences
+    private val seenFactoryTypes = mutableSetOf<Int>()
+
     /** 内置倒计时的「自定义排序」快照（用户长按拖过之后记住；没拖过就是空，走默认顺序）。 */
     private lateinit var orderPrefs: SharedPreferences
 
@@ -201,6 +210,9 @@ class MainActivity : Activity() {
     /** 读取本地数据，并确保出厂顺序里那些内置项（每分钟 / 每5分钟 / 每10分钟 / 每半小时 / 每小时 / 当日 / 每周 / 当月 / GTA6 / 双11 / 双12 / 今年）始终存在。 */
     private fun loadData() {
         data = CountdownStore.load(this)
+        // 新增的内置倒计时随 APK 出厂：全新安装清空历史删除标记；升级 / 重装时把
+        // 「出厂清单里本机还没登记过」的新档位强制补齐一次，绝不被老标记挡住。
+        ensureFreshBuiltIns()
         // ⚠️ v159：「100年内倒计时」整个档位删干净了，老数据里躺着的那几条连同它们的
         // 备份快照一起清掉（列表里不该再留着已经选不中的那一档）
         dropRetiredCentury()
@@ -329,6 +341,54 @@ class MainActivity : Activity() {
         }
     }
 
+    /**
+     * 让「新增的内置倒计时」随 APK 出厂：重装 / 新装 / 升级后一定在列表里。
+     *
+     * 内置项本来每次启动都会由 ensureBuiltInTimers() 补齐，但两类历史标记会把它挡住：
+     *   · removedBuiltIns（用户曾经删过这一档）
+     *   · mission_done_types（老版本把某些档位归零后标成「完成使命」）
+     * 新档位第一次在本机出现时，把这两类标记连同设置快照一起清掉，然后登记进
+     * seen_types；后续启动不再干预，用户手动删除照旧生效、不会复活。
+     * 全新安装（连数据文件都不存在）则直接清空所有历史标记，出厂清单整份补齐。
+     */
+    private fun ensureFreshBuiltIns() {
+        val firstInstall = !CountdownStore.hasData(this)
+        val fresh = defaultBuiltInOrder.filter { it !in seenFactoryTypes }
+        if (firstInstall) {
+            removedBuiltIns.clear()
+            removedPrefs.edit().clear().apply()
+        } else if (fresh.isNotEmpty()) {
+            // 老版本第一次升级到带「出厂档位登记」的版本：只把当前出厂清单整份登记，
+            // 不动用户以前删过的内置项（删了就不该复活）。之后再新增档位时，
+            // fresh 里就只剩真正的新档，才会走下面的强制补齐。
+            val targets: List<Int> = if (seenFactoryTypes.isEmpty()) emptyList() else fresh
+            var wiped = false
+            for (t in targets) {
+                if (removedBuiltIns.remove(t)) wiped = true
+                removedPrefs.edit().remove("backup_$t").apply()
+                for (key in removedPrefs.all.keys.toList()) {
+                    if (key.startsWith("backup_${t}_")) removedPrefs.edit().remove(key).apply()
+                }
+                val md = removedPrefs.getStringSet("mission_done_types", emptySet())
+                    ?.toMutableSet() ?: mutableSetOf()
+                if (md.remove(t.toString())) {
+                    removedPrefs.edit().putStringSet("mission_done_types", md).apply()
+                }
+            }
+            if (wiped) {
+                removedPrefs.edit()
+                    .putStringSet("types", removedBuiltIns.map { it.toString() }.toSet())
+                    .apply()
+            }
+        }
+        if (firstInstall || fresh.isNotEmpty()) {
+            seenFactoryTypes.addAll(defaultBuiltInOrder)
+            factoryPrefs.edit()
+                .putStringSet("seen_types", seenFactoryTypes.map { it.toString() }.toSet())
+                .apply()
+        }
+    }
+
     /** 补齐全部内置倒计时；返回是否新建（新建后才需要落盘）。 */
     private fun ensureBuiltInTimers(): Boolean {
         // 新补的内置项一律插到列表最前面，所以按出厂顺序「倒着」补：
@@ -411,6 +471,11 @@ class MainActivity : Activity() {
 
         removedPrefs = getSharedPreferences("builtin_removed", MODE_PRIVATE)
         removedBuiltIns.clear()
+        factoryPrefs = getSharedPreferences("builtin_factory", MODE_PRIVATE)
+        seenFactoryTypes.clear()
+        factoryPrefs.getStringSet("seen_types", emptySet())?.forEach {
+            it.toIntOrNull()?.let { t -> seenFactoryTypes.add(t) }
+        }
         orderPrefs = getSharedPreferences("builtin_order", MODE_PRIVATE)
 
         // 多选删除那条横幅：选中几项、一起收起、退出多选
