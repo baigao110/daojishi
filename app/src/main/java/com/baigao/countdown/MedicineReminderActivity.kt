@@ -261,10 +261,12 @@ class MedicineReminderActivity : Activity() {
         )
         lines.add(if (batteryOptimized()) "电池优化：还没关（建议关掉哦）" else "电池优化：已经关掉啦")
         lines.add("")
-        lines.add("后台守护已开启：常驻前台服务 + 系统闹钟 + 精确闹钟 +")
+        lines.add("后台守护已开启：常驻前台服务 + 每个剂次各一条系统闹钟 +")
+        lines.add("30 分钟穿透 Doze 的精确守护 + 每剂 2/30 分钟补响 +")
         lines.add("每日重复闹钟 + 每小时守护 + 15 分钟巡检；划掉应用卡片")
-        lines.add("会立刻重挂闹钟并把守护服务复活回来，像系统闹钟一样接着提醒。")
-        lines.add("通知栏那条「吃药提醒守护中」是静默常驻的，别把它关掉哦。")
+        lines.add("会立刻重挂闹钟并复活守护服务，亮屏 / 解锁 / 充电 / 改时间")
+        lines.add("时也会自动把整条链路接回来、补上漏掉的剂次，像系统闹钟")
+        lines.add("一样接着提醒。通知栏「吃药提醒守护中」是静默常驻的，别关掉哦。")
         // 通知体检：把「权限 / 渠道 / 后台」这些看不见的闸门一并告知，
         // 否则用户只能猜——而这些环节任何一个断了，代码层面都是彻底静默的。
         val bad = NotifyGuard.lines(this).filter { it.startsWith("✖") }
