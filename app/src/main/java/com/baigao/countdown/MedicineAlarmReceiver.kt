@@ -13,12 +13,21 @@ import android.widget.Toast
  *   再按需发通知（同一天同一剂只会发一次，重复闹钟 / 巡检 / 每小时守护都不会重复打扰）；
  * - ACTION_TAKEN：通知上的「已吃药」—— 记下今天并收起通知；
  * - ACTION_REVIVE：划掉卡片 / 服务被销毁时排下的「复活闹钟」响了 —— 重挂全部闹钟，
- *   并尝试把守护前台服务重新拉起来，让提醒链路在退出 App 后仍能自己接上。
+ *   并尝试把守护前台服务重新拉起来，让提醒链路在退出 App 后仍能自己接上；
+ * - ACTION_STATUS_DISMISSED：用户手动划掉「每日吃药提醒 · 已开启」状态通知 ——
+ *   把常驻开关关掉，之后任何后台自愈都不会再把这条通知贴回来。
  */
 class MedicineAlarmReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         when (intent.action) {
+            MedicineReminder.ACTION_STATUS_DISMISSED -> {
+                try {
+                    MedicineReminder.onStatusDismissed(context)
+                } catch (e: Throwable) {
+                    android.util.Log.w("MedicineAlarm", "status dismiss: ${e.message}")
+                }
+            }
             MedicineReminder.ACTION_TAKEN -> {
                 MedicineReminder.setTaken(context, true)
                 MedicineReminder.cancelNotification(context)
