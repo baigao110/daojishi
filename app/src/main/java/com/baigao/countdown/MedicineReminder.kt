@@ -57,7 +57,7 @@ object MedicineReminder {
     const val CHANNEL_ID = "medicine_reminder_v26"
     /** 历代旧渠道，一律清掉。 */
     private val OLD_CHANNEL_IDS = listOf("medicine_reminder", "medicine_reminder_high")
-    /** 常驻状态通知渠道：开启吃药提醒时显示「已开启」状态，不响铃（避免每次刷新都响）。 */
+    /** 状态通知渠道：用户主动开启「吃药常驻通知」时才显示「已开启」状态，不响铃。 */
     const val STATUS_CHANNEL_ID = "medicine_reminder_status_v33"
     /** 闹钟通知当前是否正在展示：存展示当天日期，非空=展示中；跨天即视为过期失效。 */
     private const val KEY_ALARM_DATE = "alarm_showing_date"
@@ -65,11 +65,15 @@ object MedicineReminder {
     const val ACTION_TAKEN = "com.baigao.countdown.action.MEDICINE_TAKEN"
     /** 「复活闹钟」：划掉应用卡片 / 守护服务被销毁后，由它把闹钟与守护服务重新接上。 */
     const val ACTION_REVIVE = "com.baigao.countdown.action.MEDICINE_REVIVE"
+    /** 用户手动划掉「每日吃药提醒 · 已开启」状态通知：记下「别再自动贴回来」。 */
+    const val ACTION_STATUS_DISMISSED = "com.baigao.countdown.action.MEDICINE_STATUS_DISMISSED"
 
     private const val PREF = "medicine_reminder"
     private const val KEY_ENABLED = "enabled"
-    /** 吃药常驻通知开关（默认开：状态通知常驻；关掉则只到点弹闹钟、不常驻状态条）。 */
+    /** 吃药常驻通知开关（默认关：不再自动在通知栏贴状态条；用户主动打开才显示）。 */
     private const val KEY_RESIDENT_ON = "resident_on"
+    /** 一次性迁移标记：老版本默认开着常驻状态条，升级到本版时关掉一次（不覆盖用户之后的选择）。 */
+    private const val KEY_RESIDENT_MIGRATED = "resident_migrated_v196"
     private const val KEY_HOUR = "hour"
     private const val KEY_MINUTE = "minute"
     private const val KEY_TIMES_PER_DAY = "times_per_day"
@@ -114,6 +118,8 @@ object MedicineReminder {
     private const val REQ_ALARM_SHOW = 4115
     private const val REQ_TAKEN = 4112
     private const val REQ_OPEN = 4113
+    /** 状态通知被用户划掉时的 deleteIntent 请求码（与闹钟 / 守护的都不同）。 */
+    private const val REQ_STATUS_DISMISS = 4123
     /** 全屏意图（息屏时直接弹吃药页）用的请求码。 */
     private const val REQ_FULL = 4119
     /** 每小时守护闹钟：只要有任何一路还活着，就能在 1 小时内把全链路自愈回来。 */
@@ -146,12 +152,40 @@ object MedicineReminder {
 
     fun isEnabled(ctx: Context): Boolean = prefs(ctx).getBoolean(KEY_ENABLED, false)
 
-    /** 吃药常驻通知开关（默认开：App 退出后台后状态通知仍常驻；关掉则只在到点时弹闹钟）。 */
-    fun isResidentOn(ctx: Context): Boolean = prefs(ctx).getBoolean(KEY_RESIDENT_ON, true)
+    /**
+     * 吃药常驻通知开关（默认关）。
+     *
+     * v1.0.0.63（versionCode 196）起改为默认不显示：以前是 setOngoing(true) 的
+     * 「不可划掉」状态条，而且守护服务 / 亮屏 / 解锁 / 每 30 分钟精确守护等十几处
+     * syncMedicineNotification() 都会无条件重新 notify()，用户删掉后马上又被贴回来。
+     * 现在默认关掉，老版本升级上来做一次性迁移：关掉开关并撤掉已贴着的旧状态条；
+     * 之后只有用户到「关于」页主动打开开关才会显示。
+     */
+    fun isResidentOn(ctx: Context): Boolean {
+        val p = prefs(ctx)
+        if (!p.getBoolean(KEY_RESIDENT_MIGRATED, false)) {
+            p.edit()
+                .putBoolean(KEY_RESIDENT_MIGRATED, true)
+                .putBoolean(KEY_RESIDENT_ON, false)
+                .apply()
+            cancelStatusNotification(ctx)
+        }
+        return p.getBoolean(KEY_RESIDENT_ON, false)
+    }
 
     fun setResidentOn(ctx: Context, on: Boolean) {
-        prefs(ctx).edit().putBoolean(KEY_RESIDENT_ON, on).apply()
+        // 用户主动设置过就补上迁移标记，避免下一次读取时被一次性迁移覆盖回去
+        prefs(ctx).edit()
+            .putBoolean(KEY_RESIDENT_MIGRATED, true)
+            .putBoolean(KEY_RESIDENT_ON, on)
+            .apply()
         syncMedicineNotification(ctx)
+    }
+
+    /** 用户手动划掉状态通知：等价于关掉常驻开关，之后任何自愈路径都不会再自动贴回来。 */
+    fun onStatusDismissed(ctx: Context) {
+        if (!isResidentOn(ctx)) return
+        setResidentOn(ctx, false)
     }
 
     fun hour(ctx: Context): Int = prefs(ctx).getInt(KEY_HOUR, 9)
@@ -958,9 +992,17 @@ object MedicineReminder {
         }
     }
 
+    /** 状态通知被用户划掉时回调：把「吃药常驻通知」开关关掉，杜绝自愈路径反复贴回。 */
+    private fun statusDismissPi(ctx: Context): PendingIntent =
+        PendingIntent.getBroadcast(
+            ctx, REQ_STATUS_DISMISS,
+            Intent(ctx, MedicineAlarmReceiver::class.java).setAction(ACTION_STATUS_DISMISSED),
+            piFlags()
+        )
+
     /**
-     * 常驻状态通知：吃药提醒开启时显示「每日吃药提醒 · 已开启」+ 下次提醒时间；
-     * 关闭时由 [syncMedicineNotification] 取消。不响铃、不震动、不弹全屏，仅作状态常驻。
+     * 状态通知：用户主动开启「吃药常驻通知」时显示「每日吃药提醒 · 已开启」+ 下次提醒时间；
+     * 关闭或手动划掉时由 [syncMedicineNotification] 取消。不响铃、不震动、不弹全屏。
      */
     fun postStatusNotification(ctx: Context) {
         if (!UpdateNotifier.hasPermission(ctx)) return
@@ -985,8 +1027,11 @@ object MedicineReminder {
                 .setContentTitle(title)
                 .setContentText(text)
                 .setContentIntent(openPi)
+                .setDeleteIntent(statusDismissPi(ctx))
                 .setCategory(Notification.CATEGORY_STATUS)
-                .setOngoing(true)
+                // 不再 setOngoing(true)：这条状态条必须能由用户手动划掉；
+                // 划掉时 deleteIntent 会把开关关掉，彻底不再自动贴回来。
+                .setOngoing(false)
                 .setPriority(Notification.PRIORITY_DEFAULT)
                 .setVisibility(Notification.VISIBILITY_PUBLIC)
                 .build()
@@ -1024,13 +1069,12 @@ object MedicineReminder {
 
     /**
      * 根据开关与提醒状态同步「每日吃药提醒」通知：
-     * - 提醒总开关关闭 → 取消到点提醒的闹钟通知 + 常驻状态通知；
-     * - 提醒总开关开启、且「吃药常驻通知」开启 → 发一条常驻（ongoing）状态通知
-     *   「每日吃药提醒 · 已开启」+ 下次提醒时间，即使 App 退出后台甚至被系统回收，
-     *   这条通知也一直留在通知栏（点开进吃药日历）；
-     * - 提醒总开关开启、但「吃药常驻通知」关闭 → 只保留到点时的「该吃药了」闹钟通知，
-     *   不挂常驻状态条；
-     *   真正到点的闹钟通知由 notifyNow() 用另一个 id 弹出，互不顶替。
+     * - 提醒总开关关闭 → 取消到点提醒的闹钟通知 + 状态通知；
+     * - 「吃药常驻通知」关闭（默认）→ 不挂状态条，只保留到点时的「该吃药了」闹钟通知；
+     * - 「吃药常驻通知」被用户主动打开 → 显示「每日吃药提醒 · 已开启」+ 下次提醒时间
+     *   （点开进吃药日历）；这条通知可手动划掉，划掉时 deleteIntent 会把开关关掉，
+     *   之后守护 / 亮屏 / 解锁 / 30 分钟精确守护等任何自愈路径都不会再自动贴回来。
+     * 真正到点的闹钟通知由 notifyNow() 用另一个 id 弹出，互不顶替。
      */
     fun syncMedicineNotification(ctx: Context) {
         // 昨天的闹钟通知已过期：清掉标记，让下方按今天的状态重新刷新
@@ -1044,9 +1088,9 @@ object MedicineReminder {
         // 当前「该吃药了」闹钟通知正在展示时，先别动它
         if (alarmShowingDate(ctx).isNotEmpty()) return
         if (isResidentOn(ctx)) {
-            postStatusNotification(ctx)    // 吃药常驻通知开启 → 挂上 / 刷新常驻状态通知
+            postStatusNotification(ctx)    // 用户主动开启 → 挂上 / 刷新状态通知（可手动划掉）
         } else {
-            cancelStatusNotification(ctx)  // 吃药常驻通知关闭 → 撤掉常驻状态通知（到点闹钟通知仍由各档 notifyNow 弹出）
+            cancelStatusNotification(ctx)  // 默认关闭 / 被用户划掉 → 撤掉状态通知，不再自动贴回（到点闹钟照常）
         }
     }
 
