@@ -34,10 +34,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import org.json.JSONObject
-import java.text.SimpleDateFormat
 import java.util.Collections
-import java.util.Date
-import java.util.Locale
 
 class MainActivity : Activity() {
 
@@ -1555,7 +1552,7 @@ class MainActivity : Activity() {
             setOnClickListener { onClick() }
         }
 
-    private val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
+    // v197：目标时间统一走 TargetTimeText.full()，日期时间 + 星期几一处算好，列表 / 悬浮窗 / 编辑页共用。
 
     // ---------------- 内置倒计时的默认排序 / 自定义排序 ----------------
 
@@ -2089,7 +2086,7 @@ class MainActivity : Activity() {
             c.refreshBuiltInTarget() // 内置项先对齐目标时间，保证「目标:」行显示的是当前周期
             titleTv.text = c.title
             titleTv.setTextColor(c.customColorArgb)
-            subTv.text = "目标： " + sdf.format(Date(c.targetTime)) +
+            subTv.text = "目标： " + TargetTimeText.full(c.targetTime) +
                     " | " + CountdownFormatter.modeName(c.displayMode, c.builtIn)
             lastTimeText = c.remainingText(now)
             applyTimeText(lastTimeText, c.customColorArgb)
