@@ -159,14 +159,14 @@
         android:padding="6dp"
         android:background="@drawable/glass_field">
 
+        <!-- v197：目标时间后多了星期几，放行两行，别让长文本被截断 -->
         <TextView
             android:id="@+id/fTargetTime"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textSize="10sp"
             android:textColor="#7FDBFF"
-            android:maxLines="1"
-            android:ellipsize="end" />
+            android:maxLines="2" />
 
         <LinearLayout
             android:layout_width="match_parent"
