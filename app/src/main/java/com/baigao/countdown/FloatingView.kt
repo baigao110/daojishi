@@ -17,9 +17,6 @@ import android.widget.Button
 import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 /**
  * 单个悬浮倒计时窗体：用 WindowManager 添加到屏幕最上层，可拖动。
@@ -274,8 +271,7 @@ class FloatingView(
     private fun applyTarget() {
         try {
             data.refreshBuiltInTarget() // 内置项对齐目标时间
-            val t = "目标: " +
-                SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date(data.targetTime))
+            val t = "目标: " + TargetTimeText.full(data.targetTime)
             if (t == lastTarget) return
             lastTarget = t
             targetTv.text = t
