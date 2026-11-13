@@ -136,6 +136,18 @@ class AddEditActivity : Activity() {
             timePicker.minute = cal.get(Calendar.MINUTE)
         }
 
+        // v197：目标日期后面自动标出星期几（内置项显示的是系统此刻算出来的当前周期那一天）。
+        // 用户在日期滚轮上换一天，星期几当场跟着变；显示模式 / 保存逻辑一个字没动。
+        fun refreshDateWeekday() {
+            dateLabel.text = "目标日期 · " + TargetTimeText.weekdayOfDate(
+                datePicker.year, datePicker.month, datePicker.dayOfMonth
+            )
+        }
+        refreshDateWeekday()
+        datePicker.init(datePicker.year, datePicker.month, datePicker.dayOfMonth) { _, y, m, d ->
+            dateLabel.text = "目标日期 · " + TargetTimeText.weekdayOfDate(y, m, d)
+        }
+
         //「标准模式」那三行平时先按当前类型摆好；这条倒计时只剩一种显示时（例如「每分钟」：
         // 它的标准模式就是秒模式，再留一档「秒模式」只是同句话换个名字），applyModeBlock()
         // 会把标题、下拉框和那句说明一起收掉 —— 没有第二档可挑就不占地方。
