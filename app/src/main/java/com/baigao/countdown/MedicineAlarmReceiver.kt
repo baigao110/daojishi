@@ -15,12 +15,21 @@ import android.widget.Toast
  * - ACTION_REVIVE：划掉卡片 / 服务被销毁时排下的「复活闹钟」响了 —— 重挂全部闹钟，
  *   并尝试把守护前台服务重新拉起来，让提醒链路在退出 App 后仍能自己接上；
  * - ACTION_STATUS_DISMISSED：用户手动划掉「每日吃药提醒 · 已开启」状态通知 ——
- *   把常驻开关关掉，之后任何后台自愈都不会再把这条通知贴回来。
+ *   把常驻开关关掉，之后任何后台自愈都不会再把这条通知贴回来；
+ * - ACTION_GUARD_DISMISSED：用户划掉 / 点「关闭守护」关掉「吃药提醒守护中」——
+ *   只静音当天并立刻撤掉守护通知，次日有新的吃药需求时自动恢复。
  */
 class MedicineAlarmReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         when (intent.action) {
+            MedicineReminder.ACTION_GUARD_DISMISSED -> {
+                try {
+                    MedicineReminder.onGuardDismissed(context)
+                } catch (e: Throwable) {
+                    android.util.Log.w("MedicineAlarm", "guard dismiss: ${e.message}")
+                }
+            }
             MedicineReminder.ACTION_STATUS_DISMISSED -> {
                 try {
                     MedicineReminder.onStatusDismissed(context)
