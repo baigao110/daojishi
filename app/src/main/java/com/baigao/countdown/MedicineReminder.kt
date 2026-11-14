@@ -67,6 +67,8 @@ object MedicineReminder {
     const val ACTION_REVIVE = "com.baigao.countdown.action.MEDICINE_REVIVE"
     /** 用户手动划掉「每日吃药提醒 · 已开启」状态通知：记下「别再自动贴回来」。 */
     const val ACTION_STATUS_DISMISSED = "com.baigao.countdown.action.MEDICINE_STATUS_DISMISSED"
+    /** 用户划掉 / 点「关闭守护」关掉「吃药提醒守护中」前台服务通知：当天不再自动贴回来。 */
+    const val ACTION_GUARD_DISMISSED = "com.baigao.countdown.action.MEDICINE_GUARD_DISMISSED"
 
     private const val PREF = "medicine_reminder"
     private const val KEY_ENABLED = "enabled"
@@ -80,6 +82,8 @@ object MedicineReminder {
     private const val KEY_DOSE_TIMES = "dose_times"
     private const val KEY_DOSE_CONTEXTS = "dose_contexts"
     private const val KEY_TAKEN = "taken"
+    /** 手动关掉守护通知的日期（yyyy-MM-dd）：只静音当天，次日有新的吃药需求时自动恢复。 */
+    private const val KEY_GUARD_MUTED_DATE = "guard_muted_date"
 
     /** 8 种「服药时机」选项（在吃药时间面板里 8 选 1）。 */
     val DOSE_CONTEXTS = arrayOf("空腹服", "餐前服", "随餐服", "餐后服", "晨服", "睡前服", "间隔固定服", "发作前服")
@@ -186,6 +190,31 @@ object MedicineReminder {
     fun onStatusDismissed(ctx: Context) {
         if (!isResidentOn(ctx)) return
         setResidentOn(ctx, false)
+    }
+
+    /**
+     * 「吃药提醒守护中」这条前台服务通知该不该显示（v1.0.0.63 / versionCode 198）。
+     *
+     * 旧版只要提醒总开关开着就无条件 startForeground()，于是今天已经点过「已吃药」、
+     * 吃药日历里当日已有记录，通知栏还一直挂着守护条；用户手动删掉，下一次亮屏 /
+     * 解锁 / 充电 / 每 30 分钟精确守护又会把它重新贴回来。现在三种情况一律不显示：
+     * - 提醒总开关关闭；
+     * - 用户手动关掉 / 划掉过守护通知（只在当天静音，次日自动恢复）；
+     * - 吃药日历里当天已有吃药记录（今天该吃的都吃了，不必再守着）。
+     * 唯一例外：手动指定过还没到的「下一次提醒」，那条仍要保住后台链路。
+     */
+    fun shouldShowGuard(ctx: Context): Boolean {
+        if (!isEnabled(ctx)) return false
+        if (prefs(ctx).getString(KEY_GUARD_MUTED_DATE, "") == todayKey()) return false
+        if (nextCustomMillis(ctx) > System.currentTimeMillis()) return true
+        if (isTaken(ctx, todayKey())) return false
+        return true
+    }
+
+    /** 用户手动关掉 / 划掉守护通知：记下当天，立刻撤掉通知与守护服务，当天不再自动贴回。 */
+    fun onGuardDismissed(ctx: Context) {
+        prefs(ctx).edit().putString(KEY_GUARD_MUTED_DATE, todayKey()).apply()
+        MedicineGuardService.stopQuiet(ctx)
     }
 
     fun hour(ctx: Context): Int = prefs(ctx).getInt(KEY_HOUR, 9)
@@ -377,6 +406,20 @@ object MedicineReminder {
         val set = LinkedHashSet(takenKeys(ctx))
         if (taken) set.add(key) else set.remove(key)
         prefs(ctx).edit().putStringSet(KEY_TAKEN, set).apply()
+        // v198：当日记录一落地就同步守护通知 —— 已吃药 → 立刻撤掉「吃药提醒守护中」
+        // 并停掉守护服务；撤销记录 → 按 shouldShowGuard() 决定是否把守护拉回来。
+        // 闹钟始终独立挂在 AlarmManager 上，不受影响。
+        if (key == todayKey()) {
+            if (taken) {
+                MedicineGuardService.stopQuiet(ctx)
+            } else {
+                try {
+                    MedicineGuardService.start(ctx)
+                } catch (e: Throwable) {
+                    // 后台启动前台服务可能被系统拦下，忽略即可
+                }
+            }
+        }
     }
 
     private fun notifiedDoses(ctx: Context): MutableSet<String> =
@@ -833,12 +876,11 @@ object MedicineReminder {
     )
 
     /** 自检页：守护服务是否正在运行。 */
-    fun guardStatusText(ctx: Context): String =
-        if (MedicineGuardService.isRunning(ctx)) {
-            "守护服务：运行中（划掉应用卡片也能提醒）"
-        } else {
-            "守护服务：未运行（重新打开一次应用就会自动拉起）"
-        }
+    fun guardStatusText(ctx: Context): String = when {
+        !shouldShowGuard(ctx) -> "守护服务：今日已收起（当天已吃药或手动关过，次日自动恢复）"
+        MedicineGuardService.isRunning(ctx) -> "守护服务：运行中（划掉应用卡片也能提醒）"
+        else -> "守护服务：未运行（重新打开一次应用就会自动拉起）"
+    }
 
     /** 自检页：上次「到点了却因为没有通知权限被拦下」的时刻；没被拦过返回空串。 */
     fun lastBlockedText(ctx: Context): String {
@@ -1077,6 +1119,9 @@ object MedicineReminder {
      * 真正到点的闹钟通知由 notifyNow() 用另一个 id 弹出，互不顶替。
      */
     fun syncMedicineNotification(ctx: Context) {
+        // v198 兜底：今天已吃药 / 用户手动关过守护通知时，任何一条自愈路径
+        // （守护服务、亮屏、解锁、充电、改时间、每 30 分钟精确守护…）都不许把它贴回来。
+        if (!shouldShowGuard(ctx)) MedicineGuardService.stopQuiet(ctx)
         // 昨天的闹钟通知已过期：清掉标记，让下方按今天的状态重新刷新
         val ad = alarmShowingDate(ctx)
         if (ad.isNotEmpty() && ad != todayKey()) setAlarmShowing(ctx, false)
