@@ -104,10 +104,20 @@ class MedicineGuardService : Service() {
             stopSelf()
             return START_NOT_STICKY
         }
-        if (intent?.action == ACTION_STOP) {
+        // v198：今天已吃药 / 用户手动关掉了守护通知 —— 立刻撤掉通知并停止服务，
+        // 返回 START_NOT_STICKY 防止系统把它重建回来。ACTION_STOP 走同一条路。
+        // 上面那句 startForeground() 是必须先做的：startForegroundService() 要求
+        // 服务在 5 秒内进前台，否则系统会直接判前台服务启动超时。
+        if (intent?.action == ACTION_STOP || !MedicineReminder.shouldShowGuard(this)) {
             try {
                 @Suppress("DEPRECATION")
                 stopForeground(true)
+            } catch (e: Throwable) {
+                // 忽略
+            }
+            try {
+                (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
+                    .cancel(GUARD_NOTIF_ID)
             } catch (e: Throwable) {
                 // 忽略
             }
@@ -158,6 +168,8 @@ class MedicineGuardService : Service() {
     /**
      * 守护通知走独立的低重要性渠道：静默、不响铃、不弹横幅，只是前台服务必须挂一条。
      * 与「每日吃药提醒 · 已开启」状态通知、到点的「该吃药啦」闹钟通知用不同 id，互不顶替。
+     * v198：不再 setOngoing(true)，并挂上 deleteIntent 与「关闭守护」按钮 ——
+     * 划掉或点按钮都只静音当天，次日有新的吃药需求时自动恢复。
      */
     private fun buildNotification(): Notification {
         val openPi = PendingIntent.getActivity(
@@ -169,14 +181,23 @@ class MedicineGuardService : Service() {
         return Notification.Builder(this, GUARD_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat)
             .setContentTitle("吃药提醒守护中")
-            .setContentText("划掉应用卡片后仍会按时提醒 · 点开看吃药日历")
+            .setContentText("划掉应用卡片后仍会按时提醒 · 点「关闭守护」当天收起")
             .setContentIntent(openPi)
-            .setOngoing(true)
+            .setDeleteIntent(guardDismissPi())
+            .addAction(R.drawable.ic_stat, "关闭守护", guardDismissPi())
             .setCategory(Notification.CATEGORY_SERVICE)
             .setPriority(Notification.PRIORITY_MIN)
             .setVisibility(Notification.VISIBILITY_PUBLIC)
             .build()
     }
+
+    /** 关闭 / 划掉守护通知：只静音当天，次日有新的吃药需求时自动恢复。 */
+    private fun guardDismissPi(): PendingIntent = PendingIntent.getBroadcast(
+        this, REQ_GUARD_DISMISS,
+        Intent(this, MedicineAlarmReceiver::class.java)
+            .setAction(MedicineReminder.ACTION_GUARD_DISMISSED),
+        piFlags()
+    )
 
     private fun createGuardChannel() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
@@ -204,10 +225,18 @@ class MedicineGuardService : Service() {
         const val GUARD_CHANNEL_ID = "medicine_guard_v64"
         private const val GUARD_NOTIF_ID = 20333
         private const val REQ_GUARD_OPEN = 4122
+        /** 守护通知「关闭守护」按钮 / 被划掉时的 deleteIntent 请求码。 */
+        private const val REQ_GUARD_DISMISS = 4135
 
         /** 开启提醒 / 打开 App / 开机 / 闹钟到点 / 复活广播都调它，重复调用是安全的。 */
         fun start(ctx: Context) {
             if (!MedicineReminder.isEnabled(ctx)) return
+            // v198：今天已吃药 / 用户手动关过守护通知 → 当天不再把通知贴回来。
+            // 这是所有自愈路径的唯一入口，守卫住这里就不会「删了又自己冒出来」。
+            if (!MedicineReminder.shouldShowGuard(ctx)) {
+                stopQuiet(ctx)
+                return
+            }
             val i = Intent(ctx, MedicineGuardService::class.java).setAction(ACTION_START)
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -223,6 +252,25 @@ class MedicineGuardService : Service() {
                 } catch (e2: Throwable) {
                     android.util.Log.w(TAG, "start: ${e2.message}")
                 }
+            }
+        }
+
+        /**
+         * 静默收掉守护通知并停掉服务（不创建服务、不会闪一条新通知）。
+         * 用 stopService 而不是 startService(ACTION_STOP)：后者会先创建服务并
+         * startForeground()，用户会看到守护条闪一下又消失。
+         */
+        fun stopQuiet(ctx: Context) {
+            try {
+                (ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
+                    .cancel(GUARD_NOTIF_ID)
+            } catch (e: Throwable) {
+                // 忽略
+            }
+            try {
+                ctx.stopService(Intent(ctx, MedicineGuardService::class.java))
+            } catch (e: Throwable) {
+                android.util.Log.w(TAG, "stopQuiet: ${e.message}")
             }
         }
 
