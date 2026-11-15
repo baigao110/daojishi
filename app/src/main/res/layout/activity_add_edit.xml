@@ -420,6 +420,55 @@
             </LinearLayout>
 
 
+            <!-- v199：仅「11月22日零点倒计时」亮出这一块 —— 每 X 小时 / 每 X 分钟提醒一次。
+                 关掉开关即取消全部周期提醒；倒计时归零自动删除后也会自动停止。 -->
+            <LinearLayout
+                android:id="@+id/pickupRemindBlock"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone"
+                android:layout_marginTop="16dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="周期提醒（仅此倒计时）"
+                    android:textColor="#00FFFF"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    style="@style/SettingRow"
+                    android:layout_marginTop="6dp">
+
+                    <TextView
+                        style="@style/SettingLabel"
+                        android:text="每 X 提醒一次" />
+
+                    <Switch
+                        android:id="@+id/pickupRemindSwitch"
+                        style="@style/GlassSwitch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                </LinearLayout>
+
+                <Spinner
+                    android:id="@+id/pickupIntervalSpinner"
+                    style="@style/GlassSpinner"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="提醒内容：别忘了2026年11月22日下午去九江院区拿药。关掉后不再提醒，倒计时归零自动停止。"
+                    android:textColor="#A9C7D8"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="52dp"
