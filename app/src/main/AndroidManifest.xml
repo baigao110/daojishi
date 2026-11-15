@@ -157,6 +157,11 @@
             android:name=".CountdownFinishReceiver"
             android:exported="false" />
 
+        <!-- v199：11月22日零点倒计时「每 X 提醒一次」的周期闹钟接收器（显式 Intent，不对外暴露） -->
+        <receiver
+            android:name=".PickupReminderReceiver"
+            android:exported="false" />
+
         <!-- 锁屏倒计时「唤醒刷新」：息屏 / Doze 把前台服务冻住时，靠这个闹钟把锁屏通知刷成最新；
              顺带监听屏幕点亮 / 熄灭 / 解锁：「锁屏通知常亮」要在屏幕一点亮的瞬间就把常亮页挂上去 -->
         <receiver
