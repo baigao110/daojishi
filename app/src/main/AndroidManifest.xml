@@ -100,6 +100,18 @@
                 android:value="medicine reminder keeps alarms alive after app is dismissed" />
         </service>
 
+        <!-- v200：「每 X 提醒一次」的前台守护服务。提醒通知与吃药守护通知同级别同属性，
+             由前台服务持有，划掉卡片 / 进程被清后靠 START_STICKY + 复活闹钟把周期闹钟接回来。
+             Android 14 的 specialUse 子类型说明同样必须作为 <service> 子元素。 -->
+        <service
+            android:name=".PickupGuardService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="periodic pickup reminder keeps alarms alive after app is dismissed" />
+        </service>
+
         <!-- 应用内更新：以 content:// 方式把已下载的 APK 交给系统安装器 -->
         <provider
             android:name=".ApkProvider"
