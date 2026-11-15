@@ -64,6 +64,13 @@ class MedicineGuardService : Service() {
                 } catch (e: Throwable) {
                     android.util.Log.w(TAG, "rescue: ${e.message}")
                 }
+                // v200：守卫活着时每次亮屏 / 解锁 / 充电 / 改时间，顺手把「每 X 提醒一次」
+                // 的闹钟链也重挂一遍（划掉卡片后被清掉的闹钟就靠这些事件接回来）。
+                try {
+                    PickupReminder.align(c)
+                } catch (e: Throwable) {
+                    android.util.Log.w(TAG, "pickup rescue: ${e.message}")
+                }
             }
         }
         val f = IntentFilter().apply {
@@ -133,6 +140,13 @@ class MedicineGuardService : Service() {
         } catch (e: Throwable) {
             android.util.Log.w(TAG, "reschedule: ${e.message}")
         }
+        // v200：吃药守护服务是已在前台的可信上下文，从这里把「每 X 提醒一次」的前台
+        // 守护一并拉起来最稳（从普通广播启动前台服务会被 Android 12+ 拒绝）。
+        try {
+            PickupReminder.sync(this)
+        } catch (e: Throwable) {
+            android.util.Log.w(TAG, "pickup reschedule: ${e.message}")
+        }
         return START_STICKY
     }
 
@@ -142,6 +156,12 @@ class MedicineGuardService : Service() {
             MedicineReminder.onGuardRevive(this)
         } catch (e: Throwable) {
             android.util.Log.w(TAG, "onTaskRemoved: ${e.message}")
+        }
+        // v200：同一瞬间也给「每 X 提醒一次」留一次重挂 + 复活闹钟。
+        try {
+            PickupReminder.onGuardRevive(this)
+        } catch (e: Throwable) {
+            android.util.Log.w(TAG, "pickup onTaskRemoved: ${e.message}")
         }
         super.onTaskRemoved(rootIntent)
     }
