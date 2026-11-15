@@ -83,7 +83,8 @@ class MainActivity : Activity() {
         BuiltIn.TEN_MIN, BuiltIn.HALF_HOUR, BuiltIn.HOUR,
         BuiltIn.DAY, BuiltIn.WEEK, BuiltIn.MONTH,
         BuiltIn.GTA6,
-        BuiltIn.DOUBLE_11, BuiltIn.DOUBLE_12,  // 双11 / 双12：紧接 GTA6，顺序 GTA6 → 双11 → 双12
+        BuiltIn.NOV22, BuiltIn.NOV22_1330,  // v199：GTA6 之后、双11 之前
+        BuiltIn.DOUBLE_11, BuiltIn.DOUBLE_12,  // 双11 / 双12：紧接 11/22 两档
         BuiltIn.YEAR  // v165：今年倒计时
     )
 
@@ -101,6 +102,8 @@ class MainActivity : Activity() {
         BuiltIn.WEEK to "距离本周结束",
         BuiltIn.MONTH to "距离本月结束",
         BuiltIn.GTA6 to "距离 GTA6 发售（2026-11-19 08:00）",
+        BuiltIn.NOV22 to "距离2026年11月22日0点整",
+        BuiltIn.NOV22_1330 to "距离2026年11月22日13点30分",
         BuiltIn.DOUBLE_11 to "距离双11（11月11日 0点整）",
         BuiltIn.DOUBLE_12 to "距离双12（12月12日 0点整）",
         BuiltIn.YEAR to "距离今年结束",
@@ -222,6 +225,8 @@ class MainActivity : Activity() {
         applyBuiltInOrder()
         // 归零的华都云境悦府12~20日倒计时：自动删除并弹「已完成使命」提示（华都已整体删除，此处对残留项兜底）
         reapCompletedMissions()
+        // v199：把「11月22日零点倒计时」的每 X 提醒一次对齐到当前开关 / 条目状态
+        PickupReminder.sync(this)
     }
 
     /**
@@ -390,7 +395,7 @@ class MainActivity : Activity() {
     private fun ensureBuiltInTimers(): Boolean {
         // 新补的内置项一律插到列表最前面，所以按出厂顺序「倒着」补：
         // 最后一个今年先插、第一个每分钟最后插，补完列表里内置项的顺序正好是
-        // 出厂顺序（见 defaultBuiltInOrder）：每分钟 → 每5/10分钟 → 每半小时 → 每小时 → 当日 → 每周 → 当月 → GTA6 → 双11 → 双12 → 今年
+        // 出厂顺序（见 defaultBuiltInOrder）：每分钟 → 每5/10分钟 → 每半小时 → 每小时 → 当日 → 每周 → 当月 → GTA6 → 11/22零点 → 11/22下午1点半 → 双11 → 双12 → 今年
         var added = false
         for (t in defaultBuiltInOrder.reversed()) {
             val info = builtInInfo[t] ?: continue
@@ -423,7 +428,7 @@ class MainActivity : Activity() {
                 remark = remark,
                 builtIn = type,
                 // 当月 / GTA6 的「标准模式」就是「天时分秒模式」（与记录读取时的数据升级保持一致）
-                displayMode = if (type in intArrayOf(BuiltIn.MONTH, BuiltIn.GTA6)) {
+                displayMode = if (type in intArrayOf(BuiltIn.MONTH, BuiltIn.GTA6, BuiltIn.NOV22, BuiltIn.NOV22_1330)) {
                     CountdownFormatter.MODE_DAY_HMS
                 } else 0,
                 isVisible = false   // 默认不强制弹出悬浮窗，可在列表中点「显示」
@@ -1085,6 +1090,8 @@ class MainActivity : Activity() {
     private fun reapCompletedMissions() {
         val removed = CountdownStore.reapCompletedMissions(this, data)
         if (removed.isEmpty()) return
+        // v199：11/22 两档归零被删后，顺手收掉那条「每 X 提醒一次」的闹钟
+        PickupReminder.sync(this, force = true)
         for (c in removed) pendingMissionTitles.add(c.title)
         rebuildList()
         syncService()
@@ -1586,17 +1593,23 @@ class MainActivity : Activity() {
         val custom = customBuiltInOrder()
         for (t in custom) if (t in defaultBuiltInOrder && t !in m) m.add(t)
         for (t in defaultBuiltInOrder) if (t !in m) m.add(t)
-        // 本轮新加的「双11 / 双12」出厂排在 GTA6 后面：老设备存过自定义排序、
-        // 还没轮到它俩时，别让上面那句「补齐」把它俩甩到队尾 —— 按出厂位置插回 GTA6 后面。
+        // 本轮新加的「11/22 两档 / 双11 / 双12」出厂排在 GTA6 后面：老设备存过自定义排序、
+        // 还没轮到它们时，别让上面那句「补齐」把它们甩到队尾 —— 按出厂位置插回 GTA6 后面，
+        // 顺序固定为零点 → 下午1点半 → 双11 → 双12。
         // 用户一旦拖过（saveCustomBuiltInOrder 会把在列表里的内置项全记下），
-        // 它俩就进了 custom，这里不再插手，自定义顺序照旧生效。
-        if (custom.isNotEmpty() && BuiltIn.DOUBLE_11 !in custom && BuiltIn.DOUBLE_12 !in custom) {
-            if (m.indexOf(BuiltIn.GTA6) >= 0) {
-                m.remove(BuiltIn.DOUBLE_11)
-                m.remove(BuiltIn.DOUBLE_12)
-                val at = m.indexOf(BuiltIn.GTA6)
-                m.add(at + 1, BuiltIn.DOUBLE_11)
-                m.add(at + 2, BuiltIn.DOUBLE_12)
+        // 它们就进了 custom，这里不再插手，自定义顺序照旧生效。
+        if (custom.isNotEmpty() && m.indexOf(BuiltIn.GTA6) >= 0) {
+            val wantAfterGta6 = listOf(
+                BuiltIn.NOV22, BuiltIn.NOV22_1330, BuiltIn.DOUBLE_11, BuiltIn.DOUBLE_12
+            )
+            val move = wantAfterGta6.filter { it !in custom && it in m }
+            if (move.isNotEmpty()) {
+                for (t in move) m.remove(t)
+                var at = m.indexOf(BuiltIn.GTA6) + 1
+                for (t in move) {
+                    m.add(at, t)
+                    at++
+                }
             }
         }
         return m
