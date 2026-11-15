@@ -26,6 +26,12 @@ class MedicineCheckJobService : JobService() {
         } catch (e: Throwable) {
             android.util.Log.w(TAG, "periodic check: ${e.message}")
         }
+        // v200：每 15 分钟的巡检也重挂「每 X 提醒一次」，闹钟被清掉后最多一刻钟接回来。
+        try {
+            PickupReminder.sync(this)
+        } catch (e: Throwable) {
+            android.util.Log.w(TAG, "pickup check: ${e.message}")
+        }
         // 活儿是同步干完的，直接收工；不需要系统再保持 wakelock
         jobFinished(params, false)
         return false
