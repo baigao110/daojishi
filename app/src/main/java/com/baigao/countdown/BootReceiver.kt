@@ -42,6 +42,12 @@ class BootReceiver : BroadcastReceiver() {
         } catch (e: Throwable) {
             android.util.Log.w(TAG, "medicine: ${e.message}")
         }
+        // v199：开机 / 解锁 / 应用更新后重挂「每 X 提醒一次」（重启会清掉全部闹钟）
+        try {
+            PickupReminder.sync(context, force = true)
+        } catch (e: Throwable) {
+            android.util.Log.w(TAG, "pickup: ${e.message}")
+        }
         if (intent.action == Intent.ACTION_BOOT_COMPLETED ||
             intent.action == Intent.ACTION_MY_PACKAGE_REPLACED ||
             intent.action == Intent.ACTION_USER_PRESENT
