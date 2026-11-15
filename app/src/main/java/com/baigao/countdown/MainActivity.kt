@@ -1785,6 +1785,7 @@ class MainActivity : Activity() {
         lateinit var timeLast: TextView   // 最后一位数字 —— 跳秒动画只作用在它身上
         lateinit var timeTail: TextView   // 最后一位数字之后的单位字样（如「秒」）
         lateinit var remarkTv: TextView
+        lateinit var pickupStateTv: TextView // v201：仅 11/22 零点档显示的周期提醒状态行
         lateinit var showBtn: Button
         lateinit var modeBtn: Button
         lateinit var animBtn: Button
@@ -1845,6 +1846,7 @@ class MainActivity : Activity() {
             timeLast = v.findViewById(R.id.itemTimeLast)
             timeTail = v.findViewById(R.id.itemTimeTail)
             remarkTv = v.findViewById(R.id.itemRemark)
+            pickupStateTv = v.findViewById(R.id.itemPickupState)
             showBtn = v.findViewById(R.id.itemShow)
             modeBtn = v.findViewById(R.id.itemMode)
             animBtn = v.findViewById(R.id.itemAnim)
@@ -2108,6 +2110,7 @@ class MainActivity : Activity() {
             AnimStyle.reset(timeLast, c.customColorArgb)
             // 备注：内置项用随目标时间同步变化的实时备注（跨整点 / 跨天立刻跟着变）
             refreshRemark()
+            refreshPickupState()
             showBtn.text = if (c.isVisible) "收起悬浮窗" else "展开悬浮窗"
             // 动画效果名称显示在「显示 / 显示模式」按钮之后
             animBtn.text = AnimStyle.name(c.animStyle)
@@ -2124,6 +2127,23 @@ class MainActivity : Activity() {
             } else {
                 pauseBtn.visibility = View.GONE
             }
+        }
+
+        /** v201：仅 11/22 零点档动态显示「每 X 提醒一次」的开关 / 间隔 / 下次提醒时间。 */
+        private fun refreshPickupState() {
+            val c = bound ?: return
+            val tv = pickupStateTv
+            if (c.builtIn != BuiltIn.NOV22) {
+                if (tv.visibility != View.GONE) tv.visibility = View.GONE
+                return
+            }
+            val s = try {
+                PickupReminder.statusText(context)
+            } catch (t: Throwable) {
+                "周期提醒：状态读取中"
+            }
+            if (tv.text.toString() != s) tv.text = s
+            if (tv.visibility != View.VISIBLE) tv.visibility = View.VISIBLE
         }
 
         /** 刷新备注行：内置项显示随目标时间同步变化的实时备注，其它项沿用原备注。 */
@@ -2147,6 +2167,7 @@ class MainActivity : Activity() {
         /** 仅刷新时间文本（不重建视图，保留滑动/拖动状态）；now 由调用方统一给定。 */
         fun refreshTime(now: Long = AlignedClock.now()) {
             val c = bound ?: return
+            refreshPickupState() // v201：状态行每秒跟着「下次提醒时间」走，开关一改立刻可见
             val text = c.remainingText(now)
             if (text == lastTimeText) return
             lastTimeText = text
