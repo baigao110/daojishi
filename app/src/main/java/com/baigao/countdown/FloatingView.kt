@@ -61,6 +61,9 @@ class FloatingView(
     private var lastModeText = ""
     private val modeTv: TextView = view.findViewById(R.id.fMode)
     private val remarkMain: TextView = view.findViewById(R.id.fRemark)
+    /** v201：仅 11/22 零点档显示的周期提醒状态行（单行、不撑宽悬浮窗）。 */
+    private val pickupStateTv: TextView = view.findViewById(R.id.fPickupState)
+    private var lastPickupState = ""
     private val drawerBtn: Button = view.findViewById(R.id.fDrawer)
     private val closeBtn: Button = view.findViewById(R.id.fClose)
     private val collapseBtn: Button = view.findViewById(R.id.fCollapse)
@@ -170,6 +173,7 @@ class FloatingView(
             applyModeText()
             applyTarget() // 内置项对齐目标时间，保证「目标:」显示当前周期
             applyRemark()
+            applyPickupState()
             applyPauseBtn()
             opacityBar.progress = data.opacity.coerceIn(20, 100) - 20
             applyGlassAlpha() // 玻璃底按不透明度淡化，文字（含倒计时数字）不受影响
@@ -295,6 +299,8 @@ class FloatingView(
             applyTarget()
             // 显示模式名同理：悬浮窗是常驻的，切模式 / 换内置项后这一行也要跟着变
             applyModeText()
+            // v201：周期提醒状态跟着每秒刷新，下次提醒时间 / 开关变化立刻可见
+            applyPickupState()
         } catch (e: Throwable) {
             Log.w(TAG, "update: ${e.message}")
         }
@@ -313,6 +319,24 @@ class FloatingView(
             }
         } catch (e: Throwable) {
             Log.w(TAG, "updateTimeOnly: ${e.message}")
+        }
+    }
+
+    /** v201：仅 11/22 零点档显示周期提醒状态；文本去重，避免每秒无谓重写。 */
+    private fun applyPickupState() {
+        try {
+            if (data.builtIn != BuiltIn.NOV22) {
+                if (pickupStateTv.visibility != View.GONE) pickupStateTv.visibility = View.GONE
+                return
+            }
+            val s = PickupReminder.statusText(context, compact = true)
+            if (s != lastPickupState) {
+                lastPickupState = s
+                pickupStateTv.text = s
+            }
+            if (pickupStateTv.visibility != View.VISIBLE) pickupStateTv.visibility = View.VISIBLE
+        } catch (e: Throwable) {
+            Log.w(TAG, "applyPickupState: ${e.message}")
         }
     }
 
