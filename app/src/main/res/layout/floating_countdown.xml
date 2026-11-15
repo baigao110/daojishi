@@ -138,6 +138,20 @@
         android:ellipsize="end"
         android:visibility="gone" />
 
+    <!-- v201：仅 11/22 零点档显示周期提醒状态，单行省略号避免撑宽 -->
+    <TextView
+        android:id="@+id/fPickupState"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:textSize="10sp"
+        android:textColor="#7FDBFF"
+        android:gravity="center"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:visibility="gone" />
+
+
     <TextView
         android:id="@+id/fMode"
         android:layout_width="match_parent"
