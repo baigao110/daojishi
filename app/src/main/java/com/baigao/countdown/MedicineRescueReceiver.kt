@@ -36,6 +36,13 @@ class MedicineRescueReceiver : BroadcastReceiver() {
         } catch (e: Throwable) {
             android.util.Log.w(TAG, "rescue: ${e.message}")
         }
+        // v200：这条自愈链同样服务「每 X 提醒一次」。MedicineReminder 关掉时上面的
+        // onPeriodicCheck 会直接 return，所以拿药提醒必须独立挂在这里，不能被它带着跳过。
+        try {
+            PickupReminder.sync(context)
+        } catch (e: Throwable) {
+            android.util.Log.w(TAG, "pickup rescue: ${e.message}")
+        }
     }
 
     companion object {
