@@ -101,6 +101,15 @@ object BuiltIn {
     // 一年一轮自己往下转。出厂顺序排在 GTA6 之后：GTA6 → 双11 → 双12 → 今年。
     const val DOUBLE_11 = 55
     const val DOUBLE_12 = 56
+    // ---- v199：2026-11-22 拿药相关的两档内置倒计时（编号只能末尾追加，绝不回收）----
+    // 零点档：固定目标 2026-11-22 00:00:00，附带「每 X 小时 / 每 X 分钟提醒一次」选项
+    //   （见 PickupReminder），提醒内容「别忘了2026年11月22日下午去九江院区拿药」；
+    // 下午1点半档：固定目标 2026-11-22 13:30:00。
+    // 两档都是 GTA6 风格：日子定死不滚动、可改名 / 色 / 动画 / 备注 / 提示音、
+    //   全部显示模式可用、悬浮窗同步；且归零即自动删除（见 CountdownStore.reapCompletedMissions）。
+    // 出厂顺序：GTA6 → 11月22日零点 → 11月22日下午1点半 → 双11 → 双12 → 今年。
+    const val NOV22 = 57
+    const val NOV22_1330 = 58
 
     /**
      * 固定目标时间的内置项（不随日期滚动）：返回 epoch 毫秒；滚动型内置项返回 null。
@@ -113,6 +122,8 @@ object BuiltIn {
         when (type) {
             HUADU -> cal.set(2026, Calendar.OCTOBER, 31, 0, 0, 0)
             GTA6 -> cal.set(2026, Calendar.NOVEMBER, 19, 8, 0, 0)
+            NOV22 -> cal.set(2026, Calendar.NOVEMBER, 22, 0, 0, 0)
+            NOV22_1330 -> cal.set(2026, Calendar.NOVEMBER, 22, 13, 30, 0)
             HUADU_20 -> cal.set(2026, Calendar.OCTOBER, 20, 0, 0, 0)
             HUADU_15 -> cal.set(2026, Calendar.OCTOBER, 15, 0, 0, 0)
             HUADU_16 -> cal.set(2026, Calendar.OCTOBER, 16, 0, 0, 0)
@@ -139,7 +150,8 @@ object BuiltIn {
         type != NONE && type != HUADU && type != GTA6 && type != HUADU_20 && type != HUADU_BUY &&
         type != HUADU_15 && type != HUADU_16 && type != HUADU_17 && type != HUADU_18 && type != HUADU_19 &&
         type != HUADU_12 && type != HUADU_13 && type != HUADU_14 &&
-        type != HUADU_21 && type != HUADU_28
+        type != HUADU_21 && type != HUADU_28 &&
+        type != NOV22 && type != NOV22_1330
 
     /** 是否为「正计时」内置项（华都云境悦府购买正计时）：方向与普通倒计时相反，显示「自起点至今已过去多久」。 */
     fun isCountUp(type: Int): Boolean = type == HUADU_BUY
@@ -220,6 +232,8 @@ object BuiltIn {
         YEAR -> "今年倒计时"
         DOUBLE_11 -> "双11倒计时"
         DOUBLE_12 -> "双12倒计时"
+        NOV22 -> "11月22日零点倒计时"
+        NOV22_1330 -> "11月22日下午1点半倒计时"
         HUADU_BUY -> "华都云境悦府购买正计时"
         else -> "内置倒计时"
     }
@@ -713,7 +727,7 @@ object CountdownFormatter {
             // 与每 5 / 10 分钟、每半小时、每 2~9 分钟一个写法；
             // 当日倒计时（最多 24 小时）「时」有数，仍归上面那一档走「时分秒」。
             if (mode == 0 || mode == 4) MODE_MINUTE_SECOND else mode
-        BuiltIn.WEEK, BuiltIn.MONTH, BuiltIn.HUADU, BuiltIn.GTA6, BuiltIn.HUADU_20, BuiltIn.HUADU_21, BuiltIn.HUADU_28, BuiltIn.HUADU_15, BuiltIn.HUADU_16, BuiltIn.HUADU_17, BuiltIn.HUADU_18, BuiltIn.HUADU_19, BuiltIn.HUADU_12, BuiltIn.HUADU_13, BuiltIn.HUADU_14, BuiltIn.YEAR, BuiltIn.DOUBLE_11, BuiltIn.DOUBLE_12, BuiltIn.HUADU_BUY ->
+        BuiltIn.WEEK, BuiltIn.MONTH, BuiltIn.HUADU, BuiltIn.GTA6, BuiltIn.HUADU_20, BuiltIn.HUADU_21, BuiltIn.HUADU_28, BuiltIn.HUADU_15, BuiltIn.HUADU_16, BuiltIn.HUADU_17, BuiltIn.HUADU_18, BuiltIn.HUADU_19, BuiltIn.HUADU_12, BuiltIn.HUADU_13, BuiltIn.HUADU_14, BuiltIn.YEAR, BuiltIn.DOUBLE_11, BuiltIn.DOUBLE_12, BuiltIn.HUADU_BUY, BuiltIn.NOV22, BuiltIn.NOV22_1330 ->
             // 标准模式 → 天时分秒模式；v160 起新加的「周模式 9 / 周天时分秒模式 10」原样放行
             if (mode == 0) 6 else mode
         else -> {
@@ -771,6 +785,7 @@ object CountdownFormatter {
             builtIn != BuiltIn.NONE &&
             builtIn != BuiltIn.YEAR &&  // v165：今年最长 365 天，「周」那截有数，与每月那档同待遇
             builtIn != BuiltIn.DOUBLE_11 && builtIn != BuiltIn.DOUBLE_12 &&  // 双11 / 双12 最长一年，「周」那截有数
+            builtIn != BuiltIn.NOV22 && builtIn != BuiltIn.NOV22_1330 &&  // v199：11/22 两档还有几天，「周」那截有数，与 GTA6 同款
             builtIn != BuiltIn.HUADU_BUY  // v177：正计时同款（周那截有数）
         ) {
             blocked.add(MODE_WEEK)
