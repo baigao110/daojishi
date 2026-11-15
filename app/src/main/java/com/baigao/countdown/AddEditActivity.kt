@@ -162,6 +162,21 @@ class AddEditActivity : Activity() {
         // 它跟 soundBlock 一起管着提示音那扇门：光设里头的 soundBlock 会被这层 gone 吞掉。
         val soundToggleBlock = findViewById<View>(R.id.soundToggleBlock)
 
+        // v199：只有「11月22日零点倒计时」才摆「每 X 提醒一次」这一块。
+        // 开关 / 间隔存在独立偏好里（见 PickupReminder），不进 Countdown 数据模型。
+        val pickupRemindBlock = findViewById<View>(R.id.pickupRemindBlock)
+        val pickupRemindSwitch = findViewById<Switch>(R.id.pickupRemindSwitch)
+        val pickupIntervalSpinner = findViewById<Spinner>(R.id.pickupIntervalSpinner)
+        pickupIntervalSpinner.adapter = ArrayAdapter(
+            this, android.R.layout.simple_spinner_item,
+            PickupReminder.INTERVALS.map { it.second }
+        ).also { it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
+        val savedPickupMinutes = PickupReminder.intervalMinutes(this)
+        pickupIntervalSpinner.setSelection(
+            PickupReminder.INTERVALS.indexOfFirst { it.first == savedPickupMinutes }.coerceAtLeast(0)
+        )
+        pickupRemindSwitch.isChecked = PickupReminder.isEnabled(this)
+
         // ---------- 六连框（年 / 月 / 日 / 时 / 分 / 秒）：v159 起整块恒收着 ----------
         // 六颗下拉框（年 / 月 / 日 / 时 / 分 / 秒）：与页面上其它下拉框同一套 GlassSpinner 样式，
         // 排成一行六等分，随便挑 100 年以内任意一个日子 + 时 + 分 + 秒就是这条倒计时的目标时刻。
@@ -307,6 +322,9 @@ class AddEditActivity : Activity() {
             // 挑「内置倒计时」就按它那一档显示，换回「普通倒计时」就按普通那份 loop 显示。
             loopTouched = false
             loopSpinner.setSelection(wantLoop())
+            // v199：换到别的类型就把这一块收起来，别让「每 X 提醒一次」挂在别的倒计时上
+            pickupRemindBlock.visibility =
+                if (pickedBuiltIn == BuiltIn.NOV22) View.VISIBLE else View.GONE
         }
 
         /**
@@ -440,12 +458,14 @@ class AddEditActivity : Activity() {
             override fun onNothingSelected(parent: AdapterView<*>) {}
         }
         if (builtInEdit) {
-            Toast.makeText(
-                this,
+            val tip = if (pickedBuiltIn == BuiltIn.NOV22) {
+                "内置小倒计时也能改：名字、颜色、模式、动画、备注都能改；往下还有「每 X 提醒一次」，" +
+                    "挑好间隔就会按时提醒，关掉就不再提醒；时刻是系统自己算的，它一直是内置小倒计时"
+            } else {
                 "内置小倒计时也能改：名字、颜色、模式、动画、备注都能改；时刻是系统自己往下跳的，" +
-                    "它一直是内置小倒计时",
-                Toast.LENGTH_LONG
-            ).show()
+                    "它一直是内置小倒计时"
+            }
+            Toast.makeText(this, tip, Toast.LENGTH_LONG).show()
         }
         // 六连框先按当前时刻填好（要先于下面「类型」下拉框那句 setSelection：那句会当场回调一次，
         // 那时六连框得已经有值；v159 这一整套现在恒收着，留着只是给老数据编辑页一个说得通的路）
@@ -572,6 +592,18 @@ class AddEditActivity : Activity() {
                 )
             }
             CountdownStore.save(this, list)
+            // v199：保存周期提醒的开关 / 间隔并按新配置重排闹钟。
+            // 这一块不可见时沿用旧配置，但仍强制 sync 一次 —— 万一用户把零点档
+            // 改成了普通倒计时，shouldRun() 会立刻把闹钟收掉。
+            val pickupMinutes = if (pickupRemindBlock.visibility == View.VISIBLE) {
+                PickupReminder.INTERVALS.getOrElse(pickupIntervalSpinner.selectedItemPosition) {
+                    PickupReminder.INTERVALS[0]
+                }.first
+            } else PickupReminder.intervalMinutes(this)
+            val pickupOn = if (pickupRemindBlock.visibility == View.VISIBLE) {
+                pickupRemindSwitch.isChecked
+            } else PickupReminder.isEnabled(this)
+            PickupReminder.setConfig(this, pickupOn, pickupMinutes)
             // 若是从悬浮窗进入的编辑，保存后刷新后台服务里的悬浮窗
             if (fromFloating) {
                 val ri = Intent(this, CountdownService::class.java)
