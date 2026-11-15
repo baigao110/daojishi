@@ -460,6 +460,17 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp" />
 
+                <!-- v201：开关 / 间隔的实时状态预览 -->
+                <TextView
+                    android:id="@+id/pickupStateTv"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:textColor="#4DFBFF"
+                    android:textSize="12sp"
+                    android:maxLines="2"
+                    android:ellipsize="end" />
+
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
