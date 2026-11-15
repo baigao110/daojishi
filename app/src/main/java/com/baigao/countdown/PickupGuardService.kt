@@ -17,9 +17,10 @@ import android.os.IBinder
  * 「吃药提醒守护中」同级）、START_STICKY、onTaskRemoved / onDestroy 留复活闹钟、
  * 运行时动态注册亮屏 / 解锁 / 充电 / 改时间等高频系统事件随时重挂闹钟。
  *
- * 它持有的那条前台通知就是提醒本身（固定文案见 [PickupReminder.TEXT]），
- * 级别与属性与吃药守护通知逐项一致；每到一个间隔原地刷新一次，通知栏不堆积。
- * 用户划掉它 / 点「关闭提醒」→ 只静音当天并停掉服务，次日自动恢复。
+ * 它持有的那条前台通知（20401）是**守护条**，级别与属性与吃药守护通知逐项一致；
+ * v201 起真正的「到点提醒」另用独立 id 发一条同渠道同属性的通知（见
+ * [PickupReminder.notifyReminder]），两者不再挤在同一条上。
+ * 用户划掉守护条 / 点「收起守护条」→ 只静音守护条当天，闹钟链与到点提醒照常。
  */
 class PickupGuardService : Service() {
 
@@ -85,7 +86,7 @@ class PickupGuardService : Service() {
             stopSelf()
             return START_NOT_STICKY
         }
-        if (intent?.action == ACTION_STOP || !PickupReminder.shouldShow(this)) {
+        if (intent?.action == ACTION_STOP || !PickupReminder.shouldShowGuard(this)) {
             try {
                 @Suppress("DEPRECATION")
                 stopForeground(true)
@@ -124,7 +125,7 @@ class PickupGuardService : Service() {
         }
         rescueReceiver = null
         try {
-            if (PickupReminder.shouldShow(this)) PickupReminder.onGuardRevive(this)
+            if (PickupReminder.shouldRun(this)) PickupReminder.onGuardRevive(this)
         } catch (t: Throwable) {
             android.util.Log.w(TAG, "onDestroy: ${t.message}")
         }
@@ -138,7 +139,7 @@ class PickupGuardService : Service() {
 
         /** 开启提醒 / 打开 App / 开机 / 闹钟到点 / 系统事件自愈都调它，重复调用安全。 */
         fun start(ctx: Context) {
-            if (!PickupReminder.shouldShow(ctx)) {
+            if (!PickupReminder.shouldShowGuard(ctx)) {
                 stopQuiet(ctx)
                 return
             }
