@@ -125,6 +125,18 @@
             android:textSize="12sp"
             android:textColor="#B9A794" />
 
+        <!-- v201：仅 11/22 零点档显示「每 X 提醒一次」的实时状态 -->
+        <TextView
+            android:id="@+id/itemPickupState"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textSize="11sp"
+            android:textColor="#4DFBFF"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:visibility="gone" />
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
