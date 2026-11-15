@@ -167,6 +167,7 @@ class AddEditActivity : Activity() {
         val pickupRemindBlock = findViewById<View>(R.id.pickupRemindBlock)
         val pickupRemindSwitch = findViewById<Switch>(R.id.pickupRemindSwitch)
         val pickupIntervalSpinner = findViewById<Spinner>(R.id.pickupIntervalSpinner)
+        val pickupStateTv = findViewById<TextView>(R.id.pickupStateTv)
         pickupIntervalSpinner.adapter = ArrayAdapter(
             this, android.R.layout.simple_spinner_item,
             PickupReminder.INTERVALS.map { it.second }
@@ -176,6 +177,21 @@ class AddEditActivity : Activity() {
             PickupReminder.INTERVALS.indexOfFirst { it.first == savedPickupMinutes }.coerceAtLeast(0)
         )
         pickupRemindSwitch.isChecked = PickupReminder.isEnabled(this)
+        // v201：开关 / 间隔一改，状态预览立刻跟着变，不用等保存
+        fun refreshPickupStatePreview() {
+            val minutes = PickupReminder.INTERVALS.getOrElse(pickupIntervalSpinner.selectedItemPosition) {
+                PickupReminder.INTERVALS[0]
+            }.first
+            pickupStateTv.text = PickupReminder.detailText(this, pickupRemindSwitch.isChecked, minutes)
+        }
+        refreshPickupStatePreview()
+        pickupRemindSwitch.setOnCheckedChangeListener { _, _ -> refreshPickupStatePreview() }
+        pickupIntervalSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                refreshPickupStatePreview()
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
 
         // ---------- 六连框（年 / 月 / 日 / 时 / 分 / 秒）：v159 起整块恒收着 ----------
         // 六颗下拉框（年 / 月 / 日 / 时 / 分 / 秒）：与页面上其它下拉框同一套 GlassSpinner 样式，
@@ -603,7 +619,7 @@ class AddEditActivity : Activity() {
             val pickupOn = if (pickupRemindBlock.visibility == View.VISIBLE) {
                 pickupRemindSwitch.isChecked
             } else PickupReminder.isEnabled(this)
-            PickupReminder.setConfig(this, pickupOn, pickupMinutes)
+            PickupReminder.setConfig(this, pickupOn, pickupMinutes, pickupRemindBlock.visibility == View.VISIBLE)
             // 若是从悬浮窗进入的编辑，保存后刷新后台服务里的悬浮窗
             if (fromFloating) {
                 val ri = Intent(this, CountdownService::class.java)
