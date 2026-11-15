@@ -52,6 +52,13 @@ class MedicineAlarmReceiver : BroadcastReceiver() {
                 } catch (e: Throwable) {
                     android.util.Log.w("MedicineAlarm", "revive: ${e.message}")
                 }
+                // v200：复活广播同时把「每 X 提醒一次」接回来（吃药提醒关着时
+                // MedicineReminder.onRevive 会直接 return，不能让拿药提醒被它带过去）。
+                try {
+                    PickupReminder.sync(context)
+                } catch (e: Throwable) {
+                    android.util.Log.w("MedicineAlarm", "pickup revive: ${e.message}")
+                }
             }
             else -> {
                 try {
