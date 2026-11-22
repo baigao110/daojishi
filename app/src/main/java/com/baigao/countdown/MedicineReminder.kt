@@ -82,6 +82,8 @@ object MedicineReminder {
     private const val KEY_DOSE_TIMES = "dose_times"
     private const val KEY_DOSE_CONTEXTS = "dose_contexts"
     private const val KEY_TAKEN = "taken"
+    /** v1.0.0.65：已吃药的具体时刻（精确到秒）：taken_at_<yyyy-MM-dd> 存 epoch 毫秒。 */
+    private const val KEY_TAKEN_AT_PREFIX = "taken_at_"
     /** 手动关掉守护通知的日期（yyyy-MM-dd）：只静音当天，次日有新的吃药需求时自动恢复。 */
     private const val KEY_GUARD_MUTED_DATE = "guard_muted_date"
 
@@ -388,6 +390,30 @@ object MedicineReminder {
 
     // ---------------- 吃药记录 ----------------
 
+    /** 已吃药时间的统一显示格式：2026年11月22日 15时:56分:22秒。 */
+    fun takenTimeFormat(): SimpleDateFormat =
+        SimpleDateFormat("yyyy'年'MM'月'dd'日' HH'时':mm'分':ss'秒'", Locale.getDefault())
+
+    /**
+     * 某一天「已吃药」的具体时刻文本（v1.0.0.65）。
+     * 时间戳记的是写下这条记录的那一刻；补记以前的日子时日期按记录那天的 key 显示、
+     * 时分秒用实际记录时刻，格式统一且不伪造历史时刻。
+     * 升级前的旧记录只存了日期、没有时间戳，返回空串。
+     */
+    fun takenTimeText(ctx: Context, key: String = todayKey()): String {
+        val t = prefs(ctx).getLong(KEY_TAKEN_AT_PREFIX + key, 0L)
+        if (t <= 0L) return ""
+        val cal = Calendar.getInstance()
+        cal.timeInMillis = t
+        val p = key.split("-")
+        if (p.size == 3) {
+            p[0].toIntOrNull()?.let { cal.set(Calendar.YEAR, it) }
+            p[1].toIntOrNull()?.let { cal.set(Calendar.MONTH, it - 1) }
+            p[2].toIntOrNull()?.let { cal.set(Calendar.DAY_OF_MONTH, it) }
+        }
+        return takenTimeFormat().format(cal.time)
+    }
+
     /** 记录键统一为「yyyy-MM-dd」。 */
     fun keyFormat(): SimpleDateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
 
@@ -405,7 +431,11 @@ object MedicineReminder {
     fun setTaken(ctx: Context, taken: Boolean, key: String = todayKey()) {
         val set = LinkedHashSet(takenKeys(ctx))
         if (taken) set.add(key) else set.remove(key)
-        prefs(ctx).edit().putStringSet(KEY_TAKEN, set).apply()
+        val e = prefs(ctx).edit().putStringSet(KEY_TAKEN, set)
+        // v1.0.0.65：记下「已吃药」的精确时刻（含秒）；撤销记录时一并清掉
+        if (taken) e.putLong(KEY_TAKEN_AT_PREFIX + key, System.currentTimeMillis())
+        else e.remove(KEY_TAKEN_AT_PREFIX + key)
+        e.apply()
         // v198：当日记录一落地就同步守护通知 —— 已吃药 → 立刻撤掉「吃药提醒守护中」
         // 并停掉守护服务；撤销记录 → 按 shouldShowGuard() 决定是否把守护拉回来。
         // 闹钟始终独立挂在 AlarmManager 上，不受影响。
@@ -1251,10 +1281,15 @@ object MedicineReminder {
     fun statusText(ctx: Context): String {
         val on = isEnabled(ctx)
         if (!on) return "提醒关啦 · 已记录 ${takenCount(ctx)} 天"
-        val today = if (isTaken(ctx)) "吃过啦 ✓" else "还没吃"
+        val takenNow = isTaken(ctx)
+        val today = if (takenNow) "吃过啦 ✓" else "还没吃"
+        // v1.0.0.65：吃药记录补上「已吃药」的具体时刻，精确到秒
+        val at = if (takenNow) takenTimeText(ctx) else ""
+        val takenLine = if (at.isNotEmpty()) "\n已吃药时间：$at"
+            else if (takenNow) "\n已吃药时间：旧记录只记到日期" else ""
         val n = timesPerDay(ctx)
         val sched = if (n > 1) "\n每天 $n 次哦：${doseScheduleText(ctx)}" else ""
         val tail = if (nextIsCustom(ctx)) "（手动改过啦）" else ""
-        return "今天：$today · 已记录 ${takenCount(ctx)} 天\n下次提醒 ${nextTriggerText(ctx)}$tail$sched"
+        return "今天：$today · 已记录 ${takenCount(ctx)} 天$takenLine\n下次提醒 ${nextTriggerText(ctx)}$tail$sched"
     }
 }
