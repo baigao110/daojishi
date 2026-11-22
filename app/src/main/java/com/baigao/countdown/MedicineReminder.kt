@@ -390,14 +390,20 @@ object MedicineReminder {
 
     // ---------------- 吃药记录 ----------------
 
-    /** 已吃药时间的统一显示格式：2026年11月22日 15时:56分:22秒。 */
-    fun takenTimeFormat(): SimpleDateFormat =
-        SimpleDateFormat("yyyy'年'MM'月'dd'日' HH'时':mm'分':ss'秒'", Locale.getDefault())
+    /** 已吃药时间的日期段：2026年11月22日。 */
+    private fun takenDateFormat(): SimpleDateFormat =
+        SimpleDateFormat("yyyy'年'MM'月'dd'日'", Locale.getDefault())
+
+    /** 已吃药时间的时刻段：15时:56分:22秒。 */
+    private fun takenClockFormat(): SimpleDateFormat =
+        SimpleDateFormat("HH'时':mm'分':ss'秒'", Locale.getDefault())
 
     /**
-     * 某一天「已吃药」的具体时刻文本（v1.0.0.65）。
+     * 某一天「已吃药」的具体时刻文本（v203 起带星期几）。
      * 时间戳记的是写下这条记录的那一刻；补记以前的日子时日期按记录那天的 key 显示、
-     * 时分秒用实际记录时刻，格式统一且不伪造历史时刻。
+     * 时分秒用实际记录时刻，星期也按记录那天的年月日推算（不会串成今天），不伪造历史时刻。
+     * 统一格式：2026年11月22日 星期日 15时:56分:22秒。
+     * 中文星期走 TargetTimeText 的那份表（日/一/二/三/四/五/六），不受系统语言影响。
      * 升级前的旧记录只存了日期、没有时间戳，返回空串。
      */
     fun takenTimeText(ctx: Context, key: String = todayKey()): String {
@@ -411,7 +417,11 @@ object MedicineReminder {
             p[1].toIntOrNull()?.let { cal.set(Calendar.MONTH, it - 1) }
             p[2].toIntOrNull()?.let { cal.set(Calendar.DAY_OF_MONTH, it) }
         }
-        return takenTimeFormat().format(cal.time)
+        // v203：日期 + 中文星期 + 时刻，三段拼成「xx年xx月xx日 星期x xx时:xx分:xx秒」
+        val date = takenDateFormat().format(cal.time)
+        val weekday = TargetTimeText.weekdayOf(cal.timeInMillis)
+        val clock = takenClockFormat().format(cal.time)
+        return if (weekday.isEmpty()) "$date $clock" else "$date $weekday $clock"
     }
 
     /** 记录键统一为「yyyy-MM-dd」。 */
