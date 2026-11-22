@@ -68,7 +68,8 @@ class MainActivity : Activity() {
 
     /**
      * 内置小倒计时的出厂顺序（越靠前走得越少）：每分钟、每5分钟、每10分钟、每半小时、
-     * 每小时、当日 → 每周 → 当月 → GTA6 → 双11 → 双12 → 今年。
+     * 每小时、当日 → 每周 → 当月 → 11/22零点 → 11/22下午1点半 → 双12 → 今年。
+     * ⚠️ v1.0.0.65：GTA6 与双11 两档整体下线、不可找回（见 purgeRetiredBuiltIns）。
      * ⚠️ v154 把 v151 那批（每2~9分钟、每2~23 小时，共 29 个档）整个下线了：出厂顺序与
      *    「倒计时类型」里都摘掉，老数据里的那几十条由 dropRetiredSteps() 启动即清。
      *    数量与顺序都不写死在文案里（见下面几处文案），免得再添一档时又漏改一处。
@@ -82,9 +83,8 @@ class MainActivity : Activity() {
         BuiltIn.FIVE_MIN,
         BuiltIn.TEN_MIN, BuiltIn.HALF_HOUR, BuiltIn.HOUR,
         BuiltIn.DAY, BuiltIn.WEEK, BuiltIn.MONTH,
-        BuiltIn.GTA6,
-        BuiltIn.NOV22, BuiltIn.NOV22_1330,  // v199：GTA6 之后、双11 之前
-        BuiltIn.DOUBLE_11, BuiltIn.DOUBLE_12,  // 双11 / 双12：紧接 11/22 两档
+        BuiltIn.NOV22, BuiltIn.NOV22_1330,  // v199：当月之后；v1.0.0.65 起 GTA6 / 双11 已下线
+        BuiltIn.DOUBLE_12,
         BuiltIn.YEAR  // v165：今年倒计时
     )
 
@@ -101,10 +101,8 @@ class MainActivity : Activity() {
         BuiltIn.DAY to "距离今日结束",
         BuiltIn.WEEK to "距离本周结束",
         BuiltIn.MONTH to "距离本月结束",
-        BuiltIn.GTA6 to "距离 GTA6 发售（2026-11-19 08:00）",
         BuiltIn.NOV22 to "距离2026年11月22日0点整",
         BuiltIn.NOV22_1330 to "距离2026年11月22日13点30分",
-        BuiltIn.DOUBLE_11 to "距离双11（11月11日 0点整）",
         BuiltIn.DOUBLE_12 to "距离双12（12月12日 0点整）",
         BuiltIn.YEAR to "距离今年结束",
     ).associate { it.first to Pair(BuiltIn.nameOf(it.first), it.second) }
@@ -207,7 +205,7 @@ class MainActivity : Activity() {
         }
     }
 
-    /** 读取本地数据，并确保出厂顺序里那些内置项（每分钟 / 每5分钟 / 每10分钟 / 每半小时 / 每小时 / 当日 / 每周 / 当月 / GTA6 / 双11 / 双12 / 今年）始终存在。 */
+    /** 读取本地数据，并确保出厂顺序里那些内置项（每分钟 … 当月 / 11/22 两档 / 双12 / 今年）始终存在。 */
     private fun loadData() {
         data = CountdownStore.load(this)
         // 新增的内置倒计时随 APK 出厂：全新安装清空历史删除标记；升级 / 重装时把
@@ -220,6 +218,8 @@ class MainActivity : Activity() {
         dropRetiredSteps()
         // v1.0.0.63：华都云境悦府整套倒计时整体删除、不可找回（见 purgeHuaduAll）
         purgeHuaduAll()
+        // v1.0.0.65：GTA6 / 双11 两档整体删除、不可找回（见 purgeRetiredBuiltIns）
+        purgeRetiredBuiltIns()
         if (ensureBuiltInTimers()) CountdownStore.save(this, data)
         // 内置小倒计时的顺序：拖过就按拖出来的顺序，没拖过就按出厂顺序（见 defaultBuiltInOrder）
         applyBuiltInOrder()
@@ -321,6 +321,37 @@ class MainActivity : Activity() {
         syncService()
     }
 
+    /**
+     * v1.0.0.65：GTA6倒计时（builtIn=4）与双11倒计时（builtIn=55）整体删除、不可找回。
+     * 启动即清：把列表里这两条移走，并清掉删除时留的设置快照与「已删除」标记；
+     * 出厂清单（defaultBuiltInOrder）也已经摘掉，所以新装 / 升级 /「恢复内置」都不会再生成。
+     * 编号常量保留不回收：老数据里万一还躺着这两档，认得出来才清得干净。
+     */
+    private fun purgeRetiredBuiltIns() {
+        val retired = setOf(BuiltIn.GTA6, BuiltIn.DOUBLE_11)
+        val gone = data.filter { it.builtIn in retired }
+        // 列表里没有也要扫一遍标记与快照，免得「恢复内置」里还挂着可找回项
+        var wiped = false
+        for (t in retired) {
+            if (removedBuiltIns.remove(t)) wiped = true
+            removedPrefs.edit().remove("backup_$t").apply()
+            for (key in removedPrefs.all.keys.toList()) {
+                if (key.startsWith("backup_${t}_")) removedPrefs.edit().remove(key).apply()
+            }
+        }
+        if (wiped) {
+            removedPrefs.edit()
+                .putStringSet("types", removedBuiltIns.map { it.toString() }.toSet())
+                .apply()
+        }
+        if (gone.isEmpty()) return
+        val ids = gone.map { it.id }.toHashSet()
+        data.removeAll { c -> c.id in ids }
+        CountdownStore.save(this, data)
+        rebuildList()
+        syncService()
+    }
+
     /** 清掉「每 2~9 分钟 / 每 2~23 小时」那 29 个类型（13~41）的备份快照与「已删除」标记。 */
     private fun sweepRetiredStepKeys() {
         var wiped = false
@@ -395,7 +426,7 @@ class MainActivity : Activity() {
     private fun ensureBuiltInTimers(): Boolean {
         // 新补的内置项一律插到列表最前面，所以按出厂顺序「倒着」补：
         // 最后一个今年先插、第一个每分钟最后插，补完列表里内置项的顺序正好是
-        // 出厂顺序（见 defaultBuiltInOrder）：每分钟 → 每5/10分钟 → 每半小时 → 每小时 → 当日 → 每周 → 当月 → GTA6 → 11/22零点 → 11/22下午1点半 → 双11 → 双12 → 今年
+        // 出厂顺序（见 defaultBuiltInOrder）：每分钟 → 每5/10分钟 → 每半小时 → 每小时 → 当日 → 每周 → 当月 → 11/22零点 → 11/22下午1点半 → 双12 → 今年
         var added = false
         for (t in defaultBuiltInOrder.reversed()) {
             val info = builtInInfo[t] ?: continue
@@ -1429,7 +1460,7 @@ class MainActivity : Activity() {
             }
             AlertDialog.Builder(this)
                 .setTitle("小内置都在")
-                .setMessage("内置小倒计时都乖乖在列表里啦。\n想让它们回到出厂顺序（每分钟 → 每5/10分钟 → 每半小时 → 每小时 → 当日 → 每周 → 当月 → GTA6 → 双11 → 双12 → 今年）就点「主界面默认排序」。")
+                .setMessage("内置小倒计时都乖乖在列表里啦。\n想让它们回到出厂顺序（每分钟 → 每5/10分钟 → 每半小时 → 每小时 → 当日 → 每周 → 当月 → 11/22零点 → 11/22下午1点半 → 双12 → 今年）就点「主界面默认排序」。")
                 .setPositiveButton("主界面默认排序") { _, _ -> restoreDefaultOrder() }
                 .setNegativeButton("先留着", null)
                 .show()
@@ -1593,19 +1624,17 @@ class MainActivity : Activity() {
         val custom = customBuiltInOrder()
         for (t in custom) if (t in defaultBuiltInOrder && t !in m) m.add(t)
         for (t in defaultBuiltInOrder) if (t !in m) m.add(t)
-        // 本轮新加的「11/22 两档 / 双11 / 双12」出厂排在 GTA6 后面：老设备存过自定义排序、
-        // 还没轮到它们时，别让上面那句「补齐」把它们甩到队尾 —— 按出厂位置插回 GTA6 后面，
-        // 顺序固定为零点 → 下午1点半 → 双11 → 双12。
-        // 用户一旦拖过（saveCustomBuiltInOrder 会把在列表里的内置项全记下），
-        // 它们就进了 custom，这里不再插手，自定义顺序照旧生效。
-        if (custom.isNotEmpty() && m.indexOf(BuiltIn.GTA6) >= 0) {
-            val wantAfterGta6 = listOf(
-                BuiltIn.NOV22, BuiltIn.NOV22_1330, BuiltIn.DOUBLE_11, BuiltIn.DOUBLE_12
+        // v1.0.0.65：GTA6 / 双11 已下线，出厂顺序改为「当月 → 11/22 零点 → 11/22 下午1点半 → 双12 → 今年」。
+        // 老设备存过自定义排序、还没轮到这些档时，别让上面那句「补齐」把它们甩到队尾 ——
+        // 按出厂位置插回「当月」后面。用户一旦拖过，它们就进了 custom，这里不再插手。
+        if (custom.isNotEmpty() && m.indexOf(BuiltIn.MONTH) >= 0) {
+            val wantAfterMonth = listOf(
+                BuiltIn.NOV22, BuiltIn.NOV22_1330, BuiltIn.DOUBLE_12, BuiltIn.YEAR
             )
-            val move = wantAfterGta6.filter { it !in custom && it in m }
+            val move = wantAfterMonth.filter { it !in custom && it in m }
             if (move.isNotEmpty()) {
                 for (t in move) m.remove(t)
-                var at = m.indexOf(BuiltIn.GTA6) + 1
+                var at = m.indexOf(BuiltIn.MONTH) + 1
                 for (t in move) {
                     m.add(at, t)
                     at++
