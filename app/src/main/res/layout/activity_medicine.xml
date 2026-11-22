@@ -187,7 +187,7 @@
             android:textSize="13sp"
             android:text="本月吃过 0 天" />
 
-        <!-- v1.0.0.65：本月每条「已吃药」记录的具体时间（yyyy年MM月dd日 HH时:mm分:ss秒） -->
+        <!-- v203：本月每条「已吃药」记录的具体时间（yyyy年MM月dd日 星期x HH时:mm分:ss秒） -->
         <TextView
             android:id="@+id/recordTv"
             android:layout_width="match_parent"
