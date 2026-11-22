@@ -225,6 +225,8 @@ class MainActivity : Activity() {
         applyBuiltInOrder()
         // 归零的华都云境悦府12~20日倒计时：自动删除并弹「已完成使命」提示（华都已整体删除，此处对残留项兜底）
         reapCompletedMissions()
+        // v203：双12 归零删除后，连「已删除」标记 / 设置快照一起清掉，彻底不可找回
+        purgeRetiredDouble12()
         // v199：把「11月22日零点倒计时」的每 X 提醒一次对齐到当前开关 / 条目状态
         PickupReminder.sync(this)
     }
@@ -316,6 +318,50 @@ class MainActivity : Activity() {
         if (mdSet.removeAll(huaduTypes.map { it.toString() })) {
             removedPrefs.edit().putStringSet("mission_done_types", mdSet).apply()
         }
+        CountdownStore.save(this, data)
+        rebuildList()
+        syncService()
+    }
+
+    /**
+     * v203：双12倒计时「归零后即可删除，不用找回」的兜底清理。
+     * 双12 自本版起是固定目标 2026-12-12 00:00:00，到点由
+     * CountdownStore.reapCompletedMissions() 收割并写 mission_done_types；
+     * ensureBuiltIn() 与 missingBuiltIns() 都认这个标记，所以不会自动补齐、
+     * 「＋ → 恢复内置」里也不会列出。这里再把历史上手动删除时留下的
+     * 「已删除」标记与设置快照一并清掉，并清掉可能残留的条目，做到彻底不可找回。
+     * 没到归零时刻时完全不动它 —— 出厂清单里仍保留双12，照常倒计时到 12/12 零点。
+     */
+    private fun purgeRetiredDouble12() {
+        val due = (BuiltIn.fixedTargetMillis(BuiltIn.DOUBLE_12) ?: 0L) <= System.currentTimeMillis()
+        val done = CountdownStore.isMissionDone(this, BuiltIn.DOUBLE_12)
+        if (!due && !done) return
+        // 全新安装会 clear 掉历史标记：归零后补回来，ensureBuiltIn()/missingBuiltIns() 才认，
+        // 否则「＋ → 恢复内置」里又会冒出双12。
+        if (!done) {
+            val md = (removedPrefs.getStringSet("mission_done_types", emptySet())
+                ?: emptySet()).toMutableSet()
+            if (md.add(BuiltIn.DOUBLE_12.toString())) {
+                removedPrefs.edit().putStringSet("mission_done_types", md).apply()
+            }
+        }
+        var wiped = removedBuiltIns.remove(BuiltIn.DOUBLE_12)
+        removedPrefs.edit().remove("backup_${BuiltIn.DOUBLE_12}").apply()
+        for (key in removedPrefs.all.keys.toList()) {
+            if (key.startsWith("backup_${BuiltIn.DOUBLE_12}_")) {
+                removedPrefs.edit().remove(key).apply()
+                wiped = true
+            }
+        }
+        if (wiped) {
+            removedPrefs.edit()
+                .putStringSet("types", removedBuiltIns.map { it.toString() }.toSet())
+                .apply()
+        }
+        val gone = data.filter { it.builtIn == BuiltIn.DOUBLE_12 }
+        if (gone.isEmpty()) return
+        val ids = gone.map { it.id }.toHashSet()
+        data.removeAll { c -> c.id in ids }
         CountdownStore.save(this, data)
         rebuildList()
         syncService()
@@ -459,7 +505,7 @@ class MainActivity : Activity() {
                 remark = remark,
                 builtIn = type,
                 // 当月 / GTA6 的「标准模式」就是「天时分秒模式」（与记录读取时的数据升级保持一致）
-                displayMode = if (type in intArrayOf(BuiltIn.MONTH, BuiltIn.GTA6, BuiltIn.NOV22, BuiltIn.NOV22_1330)) {
+                displayMode = if (type in intArrayOf(BuiltIn.MONTH, BuiltIn.GTA6, BuiltIn.NOV22, BuiltIn.NOV22_1330, BuiltIn.DOUBLE_12)) {
                     CountdownFormatter.MODE_DAY_HMS
                 } else 0,
                 isVisible = false   // 默认不强制弹出悬浮窗，可在列表中点「显示」
