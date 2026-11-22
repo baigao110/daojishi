@@ -29,6 +29,8 @@ class MedicineCalendarActivity : Activity() {
     private lateinit var monthTv: TextView
     private lateinit var grid: LinearLayout
     private lateinit var statTv: TextView
+    /** v1.0.0.65：本月每条「已吃药」记录的具体时间。 */
+    private lateinit var recordTv: TextView
     private lateinit var todayBtn: Button
 
     /** 当前显示的月份（day 恒为 1）。 */
@@ -44,6 +46,7 @@ class MedicineCalendarActivity : Activity() {
         monthTv = findViewById(R.id.monthTv)
         grid = findViewById(R.id.gridContainer)
         statTv = findViewById(R.id.statTv)
+        recordTv = findViewById(R.id.recordTv)
         todayBtn = findViewById(R.id.todayBtn)
 
         shown.set(Calendar.DAY_OF_MONTH, 1)
@@ -61,11 +64,11 @@ class MedicineCalendarActivity : Activity() {
         todayBtn.setOnClickListener {
             val taken = MedicineReminder.isTaken(this)
             MedicineReminder.setTaken(this, !taken)
-            Toast.makeText(
-                this,
-                if (taken) "已经撤销今天的记录啦" else "已经记下今天吃药啦",
-                Toast.LENGTH_SHORT
-            ).show()
+            val at = MedicineReminder.takenTimeText(this)
+            val msg = if (taken) "已经撤销今天的记录啦"
+                else if (at.isNotEmpty()) "已经记下今天吃药啦（$at）"
+                else "已经记下今天吃药啦"
+            Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
             render()
         }
         findViewById<Button>(R.id.timesBtn).setOnClickListener { showTimesPicker() }
@@ -162,6 +165,38 @@ class MedicineCalendarActivity : Activity() {
 
         // ---------- 今日按钮 ----------
         todayBtn.text = if (MedicineReminder.isTaken(this)) "撤销今天记录" else "今天已吃药"
+
+        // ---------- v1.0.0.65：逐条列出本月「已吃药」的具体时间 ----------
+        renderRecords(fmt, taken)
+    }
+
+    /**
+     * v1.0.0.65：本月吃药记录逐条显示「已吃药」的具体时间，
+     * 统一格式 yyyy年MM月dd日 HH时:mm分:ss秒；升级前只记到日期的旧记录明确标注。
+     */
+    private fun renderRecords(fmt: java.text.SimpleDateFormat, taken: Set<String>) {
+        val sb = StringBuilder("本月吃药记录 · 已吃药的具体时间")
+        val lines = ArrayList<String>()
+        for (d in 1..shown.getActualMaximum(Calendar.DAY_OF_MONTH)) {
+            val c = shown.clone() as Calendar
+            c.set(Calendar.DAY_OF_MONTH, d)
+            val key = fmt.format(c.time)
+            if (!taken.contains(key)) continue
+            val at = MedicineReminder.takenTimeText(this, key)
+            if (at.isNotEmpty()) {
+                lines.add(at)
+            } else {
+                val p = key.split("-")
+                val day = if (p.size == 3) "${p[0]}年${p[1]}月${p[2]}日" else key
+                lines.add("$day（旧记录只记到日期）")
+            }
+        }
+        if (lines.isEmpty()) {
+            sb.append("\n本月还没有吃药记录哦")
+        } else {
+            for (s in lines.asReversed()) sb.append("\n").append(s)
+        }
+        recordTv.text = sb.toString()
     }
 
     private fun cellView(day: Int, fmt: java.text.SimpleDateFormat, taken: Set<String>): FrameLayout {
@@ -213,11 +248,11 @@ class MedicineCalendarActivity : Activity() {
             box.setOnClickListener {
                 val nowTaken = MedicineReminder.isTaken(this, key)
                 MedicineReminder.setTaken(this, !nowTaken, key)
-                Toast.makeText(
-                    this,
-                    if (nowTaken) "已经撤销 ${monthLabel(day)} 的记录啦" else "已经补记 ${monthLabel(day)} 啦",
-                    Toast.LENGTH_SHORT
-                ).show()
+                val at = MedicineReminder.takenTimeText(this, key)
+                val msg = if (nowTaken) "已经撤销 ${monthLabel(day)} 的记录啦"
+                    else if (at.isNotEmpty()) "已经补记 ${monthLabel(day)} 啦（$at）"
+                    else "已经补记 ${monthLabel(day)} 啦"
+                Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
                 render()
             }
         }
