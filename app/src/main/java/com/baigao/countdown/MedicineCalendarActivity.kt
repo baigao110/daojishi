@@ -172,7 +172,8 @@ class MedicineCalendarActivity : Activity() {
 
     /**
      * v1.0.0.65：本月吃药记录逐条显示「已吃药」的具体时间，
-     * 统一格式 yyyy年MM月dd日 HH时:mm分:ss秒；升级前只记到日期的旧记录明确标注。
+     * 统一格式 yyyy年MM月dd日 星期x HH时:mm分:ss秒（如 2026年11月22日 星期日 15时:56分:22秒）；
+     * 升级前只记到日期的旧记录明确标注。
      */
     private fun renderRecords(fmt: java.text.SimpleDateFormat, taken: Set<String>) {
         val sb = StringBuilder("本月吃药记录 · 已吃药的具体时间")
@@ -188,7 +189,12 @@ class MedicineCalendarActivity : Activity() {
             } else {
                 val p = key.split("-")
                 val day = if (p.size == 3) "${p[0]}年${p[1]}月${p[2]}日" else key
-                lines.add("$day（旧记录只记到日期）")
+                // v203：旧记录虽然没记下时刻，日期后面依旧跟着那天的星期，整列格式统一
+                val week = if (p.size == 3) {
+                    val y = p[0].toIntOrNull(); val mo = p[1].toIntOrNull(); val dy = p[2].toIntOrNull()
+                    if (y != null && mo != null && dy != null) TargetTimeText.weekdayOfDate(y, mo - 1, dy) else ""
+                } else ""
+                lines.add(if (week.isEmpty()) "$day（旧记录只记到日期）" else "$day $week（旧记录只记到日期）")
             }
         }
         if (lines.isEmpty()) {
