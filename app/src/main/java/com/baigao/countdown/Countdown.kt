@@ -95,13 +95,12 @@ object BuiltIn {
     // ---- 本轮新加的「华都云境悦府21日 / 28日星期三倒计时」：固定目标 2026-10-21 / 28 00:00:00，风格与 GTA6 一致（日子定死、不滚动、可改名/色/动画/备注/提示音），全部 11 显示模式可用，悬浮窗同步；归零不自动删（GTA6 风格） ----
     const val HUADU_21 = 53
     const val HUADU_28 = 54
-    // ---- 本轮新加的「双11 / 双12 倒计时」（编号只能末尾追加，绝不回收）----
-    // 双11：目标为「下一个 11 月 11 日 00:00:00」；双12：目标为「下一个 12 月 12 日 00:00:00」。
-    // 与「每分钟倒计时」同款周期滚动型内置项：同款玻璃卡片，名字 / 颜色 / 全部 11 档显示模式 /
-    // 跳秒动画 / 备注都能改，悬浮窗同步，删了能在「恢复内置」里找回；归零自动接上下一年，
-    // 一年一轮自己往下转。出厂顺序排在当月之后：11/22 两档 → 双12 → 今年（GTA6 / 双11 已于 v1.0.0.65 下线）。
-    // ⚠️ v1.0.0.65 已退役：双11 倒计时整体删除、不可找回；编号 55 保留不回收，仅用于清理旧数据
+    // ---- 双11 / 双12 倒计时（编号只能末尾追加，绝不回收）----
+    // ⚠️ v1.0.0.65 已退役：双11 整体删除、不可找回；编号 55 保留不回收，仅用于清理旧数据。
     const val DOUBLE_11 = 55
+    // ⚠️ v1.0.0.65（203）：双12 改为「固定目标 2026-12-12 00:00:00」，不再滚动到下一年。
+    // 与 11/22 两档同款：归零即自动删除、且不可找回（见 CountdownStore.reapCompletedMissions）。
+    // 出厂顺序仍在当月之后：11/22 两档 → 双12 → 今年。
     const val DOUBLE_12 = 56
     // ---- v199：2026-11-22 拿药相关的两档内置倒计时（编号只能末尾追加，绝不回收）----
     // 零点档：固定目标 2026-11-22 00:00:00，附带「每 X 小时 / 每 X 分钟提醒一次」选项
@@ -126,6 +125,7 @@ object BuiltIn {
             GTA6 -> cal.set(2026, Calendar.NOVEMBER, 19, 8, 0, 0)
             NOV22 -> cal.set(2026, Calendar.NOVEMBER, 22, 0, 0, 0)
             NOV22_1330 -> cal.set(2026, Calendar.NOVEMBER, 22, 13, 30, 0)
+            DOUBLE_12 -> cal.set(2026, Calendar.DECEMBER, 12, 0, 0, 0)  // v203：双12 归零即删
             HUADU_20 -> cal.set(2026, Calendar.OCTOBER, 20, 0, 0, 0)
             HUADU_15 -> cal.set(2026, Calendar.OCTOBER, 15, 0, 0, 0)
             HUADU_16 -> cal.set(2026, Calendar.OCTOBER, 16, 0, 0, 0)
@@ -153,7 +153,8 @@ object BuiltIn {
         type != HUADU_15 && type != HUADU_16 && type != HUADU_17 && type != HUADU_18 && type != HUADU_19 &&
         type != HUADU_12 && type != HUADU_13 && type != HUADU_14 &&
         type != HUADU_21 && type != HUADU_28 &&
-        type != NOV22 && type != NOV22_1330
+        type != NOV22 && type != NOV22_1330 &&
+        type != DOUBLE_12  // v203：固定目标，归零即删，不再接下一年
 
     /** 是否为「正计时」内置项（华都云境悦府购买正计时）：方向与普通倒计时相反，显示「自起点至今已过去多久」。 */
     fun isCountUp(type: Int): Boolean = type == HUADU_BUY
@@ -305,7 +306,7 @@ data class Countdown(
         BuiltIn.MINUTE, BuiltIn.FIVE_MIN, BuiltIn.TEN_MIN, BuiltIn.HALF_HOUR,
         BuiltIn.HOUR, BuiltIn.DAY, BuiltIn.WEEK, BuiltIn.MONTH,
         BuiltIn.YEAR,  // v165：今年倒计时与每小时同脉（归零自动进下一年），不给换音入口
-        BuiltIn.DOUBLE_11, BuiltIn.DOUBLE_12  // 双11 / 双12：与每分钟同款周期滚动，不给换音入口
+        BuiltIn.DOUBLE_11  // 双11（已退役）；双12 自 203 起是固定目标，可按固定档挑提示音
     ) || builtIn in BuiltIn.MIN_2..BuiltIn.HOUR_23  // v151：每2~9分钟 / 每2~23小时，一律同款不给换音
 
 
@@ -451,8 +452,9 @@ data class Countdown(
                 cal.set(Calendar.DAY_OF_MONTH, 1)
                 if (cal.timeInMillis <= System.currentTimeMillis()) cal.add(Calendar.YEAR, 1)
             }
-            BuiltIn.DOUBLE_11, BuiltIn.DOUBLE_12 -> {
-                // 双11 / 双12：目标定在「今年 11 月 11 日 / 12 月 12 日的 00:00:00」，
+            BuiltIn.DOUBLE_11 -> {
+                // 双11（已退役，留作老数据识别）：目标定在「今年 11 月 11 日 00:00:00」。
+                // ⚠️ 双12 自 203 起是固定目标，上面 fixedTargetMillis 分支已提前返回，不再走这里。
                 // 与「每分钟倒计时」同款周期滚动 —— 归零那一帧系统自己把目标推到下一年的同一天，
                 // 不会停在 0 上，一年一轮自己往下转。先把日子定到 1 号再换月份，
                 // 免得今天是 31 号时 set(MONTH) 直接溢到下个月去；再归零时分秒后比较，
@@ -786,7 +788,7 @@ object CountdownFormatter {
             builtIn != BuiltIn.HUADU_21 && builtIn != BuiltIn.HUADU_28 &&  // 本轮：华都云境悦府21/28日星期三倒计时与 GTA6 同款（周那截有数）
             builtIn != BuiltIn.NONE &&
             builtIn != BuiltIn.YEAR &&  // v165：今年最长 365 天，「周」那截有数，与每月那档同待遇
-            builtIn != BuiltIn.DOUBLE_11 && builtIn != BuiltIn.DOUBLE_12 &&  // 双11 / 双12 最长一年，「周」那截有数
+            builtIn != BuiltIn.DOUBLE_11 && builtIn != BuiltIn.DOUBLE_12 &&  // 双12 固定到 12/12，「周」那截有数
             builtIn != BuiltIn.NOV22 && builtIn != BuiltIn.NOV22_1330 &&  // v199：11/22 两档还有几天，「周」那截有数，与 GTA6 同款
             builtIn != BuiltIn.HUADU_BUY  // v177：正计时同款（周那截有数）
         ) {
