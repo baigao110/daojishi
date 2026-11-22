@@ -9,9 +9,15 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <LinearLayout
+    <!-- v1.0.0.65：整页可滚动，吃药记录逐条列出具体时间也不会被裁掉 / 遮住按钮 -->
+    <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:scrollbars="none">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:orientation="vertical"
         android:padding="14dp">
 
@@ -181,6 +187,18 @@
             android:textSize="13sp"
             android:text="本月吃过 0 天" />
 
+        <!-- v1.0.0.65：本月每条「已吃药」记录的具体时间（yyyy年MM月dd日 HH时:mm分:ss秒） -->
+        <TextView
+            android:id="@+id/recordTv"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:gravity="center"
+            android:lineSpacingExtra="3dp"
+            android:textColor="#FF4DFBFF"
+            android:textSize="12sp"
+            android:text="本月吃药记录 · 已吃药的具体时间" />
+
         <Button
             android:id="@+id/todayBtn"
             android:layout_width="220dp"
@@ -204,5 +222,7 @@
             android:text="点过去的或今天的日期可以补记 / 撤销，未来的日期不能记哦。\n提醒时间、次数和服药时机可以在「关于」页或上面按钮设置。" />
 
     </LinearLayout>
+
+    </ScrollView>
 
 </FrameLayout>
