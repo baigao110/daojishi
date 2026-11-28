@@ -126,6 +126,8 @@ class AboutActivity : Activity() {
                 ).show()
                 return@setOnClickListener
             }
+            // 测试前先校准「锁屏必显」渠道：被调成静默时当场重建，避免测了半天啥也没有
+            LockScreenClock.ensureReady(this@AboutActivity)
             val ok = try {
                 LockScreenClock.testOne(this@AboutActivity)
             } catch (e: Throwable) {
@@ -513,6 +515,9 @@ class AboutActivity : Activity() {
         sb.append("\n")
         sb.append("展开中的倒计时 ").append(live).append(" 条 · 刷新服务：")
         sb.append(if (svc) "运行中（锁屏后靠它跳秒）" else "没在跑（回主界面会自动拉起）")
+        sb.append("\n锁屏通知渠道：")
+        sb.append(if (LockScreenClock.channelHealthy(this)) "正常（高优先级、锁屏可见）"
+                  else "曾被调成静默 / 关闭 —— 打开 App 会自动修复，仍不行请点「通知小体检」")
         if (on && live == 0) {
             sb.append("\n（还没展开过任何倒计时，先在列表里把要看的那条「展开」一下）")
         }
