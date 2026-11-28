@@ -57,9 +57,6 @@ class CountdownService : Service() {
     override fun onCreate() {
         super.onCreate()
         wm = getSystemService(Context.WINDOW_SERVICE) as WindowManager
-        // 服务一起来就把「锁屏必显」渠道准备好 / 自愈，
-        // 免得渠道被用户或 ROM 调成静默后，锁屏倒计时一直发不出来。
-        LockScreenClock.ensureReady(this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
