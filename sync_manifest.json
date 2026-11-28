@@ -1,7 +1,0 @@
-{
-  "revision": 213,
-  "versionName": "1.0.0.70",
-  "updatedAt": "2026-11-28-v213",
-  "_readme": "同步清单（v213）：App 打开第一个读的文件，登记版本号 versionName 与修订号 revision。★原生功能同步入口（v213 新）：ui_config.json 的 nativeActions 数组登记 APK 内已有原生功能的入口，加一项=打开 App 动态栏多一个原生功能按钮，删一项=按钮消失。可用 key：about 关于/设置、medicine 吃药提醒、calendar 吃药日历、add 添加倒计时、config 界面配置编辑器、settings 应用系统设置；写字符串 key 或用 {\"key\",\"label\",\"enabled\"} 对象都行。★功能增删：actions 加一项=多一个功能按钮、删一项=按钮消失；modules 加一个 dex=加载新功能代码、删一项=功能卸载。改完把 revision 加 1 即可，用户打开工具即同步，不用重装 APK。★fragments 是额外配置片段文件列表（相对仓库根文件名或完整 http(s) 网址），按顺序深度合并进 ui_config.json：加文件=加配置/功能，删项=移除，改内容=改动生效。versionName 改成想显示的版本号即可同步显示。即使忘记改 revision，配置内容本身变化也会被检测出来。",
-  "fragments": []
-}
