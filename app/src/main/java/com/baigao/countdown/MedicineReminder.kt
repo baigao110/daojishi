@@ -84,6 +84,8 @@ object MedicineReminder {
     private const val KEY_TAKEN = "taken"
     /** v1.0.0.65：已吃药的具体时刻（精确到秒）：taken_at_<yyyy-MM-dd> 存 epoch 毫秒。 */
     private const val KEY_TAKEN_AT_PREFIX = "taken_at_"
+    /** v204：由吃药日历点日期格子「补记」写下的日期集合，用来和当天的正常记录区分开。 */
+    private const val KEY_MAKEUP = "makeup_keys"
     /** 手动关掉守护通知的日期（yyyy-MM-dd）：只静音当天，次日有新的吃药需求时自动恢复。 */
     private const val KEY_GUARD_MUTED_DATE = "guard_muted_date"
 
@@ -398,6 +400,17 @@ object MedicineReminder {
     private fun takenClockFormat(): SimpleDateFormat =
         SimpleDateFormat("HH'时':mm'分':ss'秒'", Locale.getDefault())
 
+    /** v204：当前时刻的完整中文格式，补记确认框用它明确告诉用户「补记时间为当前时间」。 */
+    fun currentTimeText(): String = formatTakenTime(Calendar.getInstance())
+
+    /** 统一的「yyyy年MM月dd日 星期x HH时:mm分:ss秒」拼装，日历、状态行与提示框共用一处。 */
+    private fun formatTakenTime(cal: Calendar): String {
+        val date = takenDateFormat().format(cal.time)
+        val weekday = TargetTimeText.weekdayOf(cal.timeInMillis)
+        val clock = takenClockFormat().format(cal.time)
+        return if (weekday.isEmpty()) "$date $clock" else "$date $weekday $clock"
+    }
+
     /**
      * 某一天「已吃药」的具体时刻文本（v203 起带星期几）。
      * 时间戳记的是写下这条记录的那一刻；补记以前的日子时日期按记录那天的 key 显示、
@@ -418,10 +431,7 @@ object MedicineReminder {
             p[2].toIntOrNull()?.let { cal.set(Calendar.DAY_OF_MONTH, it) }
         }
         // v203：日期 + 中文星期 + 时刻，三段拼成「xx年xx月xx日 星期x xx时:xx分:xx秒」
-        val date = takenDateFormat().format(cal.time)
-        val weekday = TargetTimeText.weekdayOf(cal.timeInMillis)
-        val clock = takenClockFormat().format(cal.time)
-        return if (weekday.isEmpty()) "$date $clock" else "$date $weekday $clock"
+        return formatTakenTime(cal)
     }
 
     /** 记录键统一为「yyyy-MM-dd」。 */
@@ -434,14 +444,35 @@ object MedicineReminder {
     fun takenKeys(ctx: Context): Set<String> =
         prefs(ctx).getStringSet(KEY_TAKEN, emptySet()) ?: emptySet()
 
+    /**
+     * v204：哪些天是「补记」的。日历里点日期格子补记的会登记进来；
+     * 通知上点「已吃药」、吃药日历底部「今天已吃药」按钮写下的都是正常记录，不在集合里。
+     * 升级前的老记录没有这个标记，一律按正常记录显示。
+     */
+    fun makeupKeys(ctx: Context): Set<String> =
+        LinkedHashSet(prefs(ctx).getStringSet(KEY_MAKEUP, emptySet()) ?: emptySet())
+
+    fun isMakeup(ctx: Context, key: String = todayKey()): Boolean = makeupKeys(ctx).contains(key)
+
     fun isTaken(ctx: Context, key: String = todayKey()): Boolean = takenKeys(ctx).contains(key)
     fun takenCount(ctx: Context): Int = takenKeys(ctx).size
 
-    /** 写入 / 撤销某一天的记录（默认今天）。 */
-    fun setTaken(ctx: Context, taken: Boolean, key: String = todayKey()) {
+    /**
+     * 写入 / 撤销某一天的记录（默认今天）。
+     *
+     * @param makeup 由吃药日历点日期格子「补记」时为 true：记下补记标志，
+     *               日历格子与本月记录都会标上「补记」，与当天的正常记录区分。
+     *               补记的时间戳仍是**当前时间**（System.currentTimeMillis()），
+     *               日期按 key 显示、时分秒用实际记录时刻，不伪造历史时刻。
+     */
+    fun setTaken(ctx: Context, taken: Boolean, key: String = todayKey(), makeup: Boolean = false) {
         val set = LinkedHashSet(takenKeys(ctx))
         if (taken) set.add(key) else set.remove(key)
-        val e = prefs(ctx).edit().putStringSet(KEY_TAKEN, set)
+        val mk = LinkedHashSet(makeupKeys(ctx))
+        if (taken && makeup) mk.add(key) else mk.remove(key)
+        val e = prefs(ctx).edit()
+            .putStringSet(KEY_TAKEN, set)
+            .putStringSet(KEY_MAKEUP, mk)
         // v1.0.0.65：记下「已吃药」的精确时刻（含秒）；撤销记录时一并清掉
         if (taken) e.putLong(KEY_TAKEN_AT_PREFIX + key, System.currentTimeMillis())
         else e.remove(KEY_TAKEN_AT_PREFIX + key)
@@ -1293,10 +1324,11 @@ object MedicineReminder {
         if (!on) return "提醒关啦 · 已记录 ${takenCount(ctx)} 天"
         val takenNow = isTaken(ctx)
         val today = if (takenNow) "吃过啦 ✓" else "还没吃"
-        // v1.0.0.65：吃药记录补上「已吃药」的具体时刻，精确到秒
+        // v1.0.0.65：吃药记录补上「已吃药」的具体时刻，精确到秒；v204 补记的标志也跟着标出来
         val at = if (takenNow) takenTimeText(ctx) else ""
-        val takenLine = if (at.isNotEmpty()) "\n已吃药时间：$at"
-            else if (takenNow) "\n已吃药时间：旧记录只记到日期" else ""
+        val makeupTail = if (takenNow && isMakeup(ctx)) "（补记）" else ""
+        val takenLine = if (at.isNotEmpty()) "\n已吃药时间：$at$makeupTail"
+            else if (takenNow) "\n已吃药时间：旧记录只记到日期$makeupTail" else ""
         val n = timesPerDay(ctx)
         val sched = if (n > 1) "\n每天 $n 次哦：${doseScheduleText(ctx)}" else ""
         val tail = if (nextIsCustom(ctx)) "（手动改过啦）" else ""
