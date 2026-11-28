@@ -138,7 +138,7 @@ class AboutActivity : Activity() {
         }
         timeFormatSpinner = findViewById(R.id.timeFormatSpinner)
         timeFormatDescTv = findViewById(R.id.timeFormatDescTv)
-        versionTv.text = "版本 v${UpdateManager.currentVersionName(this)}"
+        versionTv.text = "版本 v${RemoteSkin.versionName(UpdateManager.currentVersionName(this))}"
         // 「倒计时的项目主页」：复制具体网址到剪贴板并弹出浏览器选择（功能同前，仅文字改了）
         findViewById<TextView>(R.id.githubLinkTv).setOnClickListener {
             val url = "https://github.com/baigao110/daojishi"
@@ -168,6 +168,10 @@ class AboutActivity : Activity() {
         }
         backBtn.setOnClickListener { finish() }
         changelogBtn.setOnClickListener { UpdateManager.showChangelog(this) }
+        // v1.0.0.66：界面 / 功能配置编辑器入口（远程同步，不用重装 APK）
+        findViewById<Button>(R.id.configBtn).setOnClickListener {
+            startActivity(Intent(this, ConfigEditorActivity::class.java))
+        }
         helpBtn.setOnClickListener { UpdateManager.showHelp(this) }
         disclaimerBtn.setOnClickListener { DisclaimerManager.show(this) }
         // 手动点「检查更新」属于用户主动要看，强制弹页面
