@@ -9,8 +9,10 @@ import android.os.Handler
 import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.widget.TextView
 import android.widget.Button
+import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.Toast
@@ -60,6 +62,13 @@ object RemoteSkin {
         val enabled: Boolean = true
     )
 
+    /** v213：原生功能入口 —— 引用 APK 内已有功能的 key，GitHub 增删即增删入口。 */
+    data class NativeEntry(
+        val key: String,
+        val label: String,
+        val enabled: Boolean = true
+    )
+
     /** v207：按 view id/tag 精确设置单个控件样式。 */
     data class ViewStyle(
         val textColor: String? = null,
@@ -75,6 +84,7 @@ object RemoteSkin {
         val features: Map<String, Boolean> = emptyMap(),
         val actions: List<Action> = emptyList(),
         val modules: List<Module> = emptyList(),
+        val nativeActions: List<NativeEntry> = emptyList(),  // v213：原生功能入口（配置增删即同步）
         val updatedAt: String? = null,
         val visibility: Map<String, Boolean> = emptyMap(),   // v207：view id/tag -> true显示/false隐藏（功能删除即隐藏）
         val viewStyles: Map<String, ViewStyle> = emptyMap(), // v207：view id/tag -> 精确颜色
@@ -358,6 +368,28 @@ object RemoteSkin {
                     modules.add(Module(name, dex, cls, m.optBoolean("enabled", true)))
             }
         }
+        // v213：原生功能入口 —— 只接受能力表里登记过的 key，避免配置写错后出现点不动的按钮
+        val nativeActions = ArrayList<NativeEntry>()
+        o.optJSONArray("nativeActions")?.let { ja ->
+            for (i in 0 until ja.length()) {
+                val item = ja.opt(i)
+                val key: String
+                val label: String
+                val enabled: Boolean
+                if (item is String) {
+                    key = item
+                    label = NativeFeatures.labelOf(key) ?: key
+                    enabled = true
+                } else if (item is JSONObject) {
+                    key = item.optString("key")
+                    label = item.optString("label").takeIf { it.isNotBlank() }
+                        ?: NativeFeatures.labelOf(key) ?: key
+                    enabled = item.optBoolean("enabled", true)
+                } else continue
+                if (key.isNotBlank() && NativeFeatures.labelOf(key) != null)
+                    nativeActions.add(NativeEntry(key, label, enabled))
+            }
+        }
         val visibility = HashMap<String, Boolean>()
         o.optJSONObject("visibility")?.let { jo ->
             val it = jo.keys()
@@ -387,6 +419,7 @@ object RemoteSkin {
             features = features,
             actions = actions,
             modules = modules,
+            nativeActions = nativeActions,
             updatedAt = o.optString("updatedAt").takeIf { it.isNotBlank() },
             visibility = visibility,
             viewStyles = viewStyles,
@@ -434,6 +467,10 @@ object RemoteSkin {
     fun actions(): List<Action> = if (state.featuresEnabled) state.actions else emptyList()
 
     fun modules(): List<Module> = if (state.featuresEnabled) state.modules else emptyList()
+
+    /** v213：原生功能入口（APK 内已有功能），GitHub 增删即同步。 */
+    fun nativeActions(): List<NativeEntry> =
+        if (state.featuresEnabled) state.nativeActions.filter { it.enabled } else emptyList()
 
     /** v207：某控件是否显示（配置里没写就返回 null 表示保持原样）。 */
     fun visibilityOf(key: String): Boolean? =
@@ -547,18 +584,26 @@ object RemoteSkin {
             if (!state.featuresEnabled) return@post
             val acts = actions()
             val mods = DynamicFeature.loadedModules()
-            if (acts.isEmpty() && mods.isEmpty()) return@post
+            val nats = nativeActions()
+            if (acts.isEmpty() && mods.isEmpty() && nats.isEmpty()) return@post
             val content = activity.findViewById<View>(android.R.id.content) as? ViewGroup ?: return@post
             val hostInfo = findHost(content) ?: return@post
             val host = hostInfo.first
             val anchor = hostInfo.second
             val density = activity.resources.displayMetrics.density
             fun dp(v: Int) = (v * density).toInt()
-            val bar = LinearLayout(activity).apply {
+            // v213：横向可滚动容器，按钮按文字宽度排列 —— 原生入口多了也不会挤成一团
+            val bar = HorizontalScrollView(activity).apply {
                 tag = "dynbar"
-                orientation = LinearLayout.HORIZONTAL
+                isHorizontalScrollBarEnabled = false
                 setPadding(0, 0, 0, dp(6))
             }
+            val inner = LinearLayout(activity).apply {
+                orientation = LinearLayout.HORIZONTAL
+            }
+            bar.addView(inner, FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT))
             fun addChip(label: String, click: () -> Unit) {
                 val cb = Button(activity).apply {
                     text = label
@@ -566,12 +611,18 @@ object RemoteSkin {
                     isAllCaps = false
                     setTextColor(0xFF001018.toInt())
                     setBackgroundResource(R.drawable.fab_accent)
-                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
-                        setMargins(0, 0, dp(4), 0)
-                    }
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    ).apply { setMargins(0, 0, dp(4), 0) }
                 }
                 cb.setOnClickListener { click() }
-                bar.addView(cb)
+                inner.addView(cb)
+            }
+            // v213：原生功能入口 —— 点击执行 APK 内已有功能（配置增删即同步）
+            for (n in nats) addChip(n.label) {
+                val t = NativeFeatures.invoke(activity, n.key)
+                if (t.isNotBlank()) Toast.makeText(activity, t, Toast.LENGTH_SHORT).show()
             }
             for (a in acts) addChip(a.label) { DynamicFeature.runAction(activity, a) }
             for ((name, m) in mods) addChip(m.label) {
