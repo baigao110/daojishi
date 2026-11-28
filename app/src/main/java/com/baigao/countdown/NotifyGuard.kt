@@ -90,20 +90,6 @@ object NotifyGuard {
         //     被降为「无声」或「关闭」后，通知会被静默丢弃 —— 这是国产 ROM 上最常见的一击。
         n++; out.add(channelItem(ctx, nm, n, MedicineReminder.CHANNEL_ID, "吃药提醒渠道", hard = true))
         n++; out.add(channelItem(ctx, nm, n, UpdateNotifier.CHANNEL_ID, "版本更新渠道", hard = true))
-        // 锁屏倒计时渠道：重要性被调低 / 关闭时，倒计时通知不会显示在锁屏上。
-        // 发通知时会自动自愈重建，这里作为体检项把「当前是否已修好」如实报出来。
-        n++
-        val lockHealthy = LockScreenClock.channelHealthy(ctx)
-        out.add(
-            Item(
-                lockHealthy, n, "锁屏倒计时渠道",
-                if (lockHealthy) "正常（高优先级、锁屏可见）"
-                else "被调成静默 / 关闭了 —— 锁屏上看不到倒计时，打开 App 会自动修复；没恢复就点下面按钮",
-                hard = false,
-                fixLabel = if (lockHealthy) null else "去打开看看",
-                fix = if (lockHealthy) null else ({ LockScreenClock.ensureReady(ctx); openNotificationSettings(ctx) })
-            )
-        )
 
         // 精确闹钟：拿不到也不致命（有系统闹钟 + 重复闹钟 + 巡检兜底），但到点会偏
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -183,27 +169,6 @@ object NotifyGuard {
 
     /** 是否全部通过。 */
     fun allOk(ctx: Context): Boolean = items(ctx).all { it.ok }
-
-    /**
-     * 体检判定的三态结果。
-     * @param allOk 是否每一项都正常。
-     * @param error 判定过程是否出过错（例如某个系统 API 抛异常）——
-     *              为 true 时调用方绝不能隐藏体检按钮，且应显示一个不依赖体检的兜底入口。
-     */
-    class CheckResult(val allOk: Boolean, val error: Boolean)
-
-    /**
-     * 安全判定：把整份体检包的生成过程用 try/catch 兜住。
-     * 一旦判定出错，一律按「不正常」返回（conservative：宁可多显示，不可误藏），
-     * 并置 error=true 让调用方显示兜底按钮。
-     */
-    fun checkSafe(ctx: Context): CheckResult = try {
-        val list = items(ctx)
-        CheckResult(list.all { it.ok }, false)
-    } catch (e: Throwable) {
-        android.util.Log.w("NotifyGuard", "checkSafe: ${e.message}")
-        CheckResult(false, true)
-    }
 
     private fun channelItem(
         ctx: Context, nm: NotificationManager, no: Int, id: String, title: String,
