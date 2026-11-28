@@ -46,8 +46,6 @@ class AboutActivity : Activity() {
     private lateinit var testBtn: Button
     private lateinit var batteryBtn: Button
     private lateinit var notifyCheckBtn: Button
-    /** 体检判定出错时的兜底入口：不依赖体检逻辑，直接跳系统通知设置。 */
-    private lateinit var notifyFallbackBtn: Button
     private lateinit var disclaimerBtn: Button
     private lateinit var checkStateTv: TextView
     private lateinit var updateModeDescTv: TextView
@@ -98,7 +96,6 @@ class AboutActivity : Activity() {
         testBtn = findViewById(R.id.testBtn)
         batteryBtn = findViewById(R.id.batteryBtn)
         notifyCheckBtn = findViewById(R.id.notifyCheckBtn)
-        notifyFallbackBtn = findViewById(R.id.notifyFallbackBtn)
         updateModeSpinner = findViewById(R.id.updateModeSpinner)
         updateModeDescTv = findViewById(R.id.updateModeDescTv)
         checkStateTv = findViewById(R.id.checkStateTv)
@@ -126,8 +123,6 @@ class AboutActivity : Activity() {
                 ).show()
                 return@setOnClickListener
             }
-            // 测试前先校准「锁屏必显」渠道：被调成静默时当场重建，避免测了半天啥也没有
-            LockScreenClock.ensureReady(this@AboutActivity)
             val ok = try {
                 LockScreenClock.testOne(this@AboutActivity)
             } catch (e: Throwable) {
@@ -143,7 +138,7 @@ class AboutActivity : Activity() {
         }
         timeFormatSpinner = findViewById(R.id.timeFormatSpinner)
         timeFormatDescTv = findViewById(R.id.timeFormatDescTv)
-        refreshVersionText()
+        versionTv.text = "版本 v${UpdateManager.currentVersionName(this)}"
         // 「倒计时的项目主页」：复制具体网址到剪贴板并弹出浏览器选择（功能同前，仅文字改了）
         findViewById<TextView>(R.id.githubLinkTv).setOnClickListener {
             val url = "https://github.com/baigao110/daojishi"
@@ -173,10 +168,6 @@ class AboutActivity : Activity() {
         }
         backBtn.setOnClickListener { finish() }
         changelogBtn.setOnClickListener { UpdateManager.showChangelog(this) }
-        // v1.0.0.66：界面 / 功能配置编辑器入口（远程同步，不用重装 APK）
-        findViewById<Button>(R.id.configBtn).setOnClickListener {
-            startActivity(Intent(this, ConfigEditorActivity::class.java))
-        }
         helpBtn.setOnClickListener { UpdateManager.showHelp(this) }
         disclaimerBtn.setOnClickListener { DisclaimerManager.show(this) }
         // 手动点「检查更新」属于用户主动要看，强制弹页面
@@ -206,21 +197,8 @@ class AboutActivity : Activity() {
         }
         // 「允许后台运行」：关掉电池优化，后台检查才不会被系统掐断
         batteryBtn.setOnClickListener { requestIgnoreBattery() }
-        // 「通知体检」：把「退出后收不到通知」拆成一项项可查、可一键修的开关。
-        // 万一判定/弹窗过程出异常，兜底直接跳系统通知设置，绝不让用户没入口。
-        notifyCheckBtn.setOnClickListener {
-            try {
-                NotifyGuard.showReport(this@AboutActivity)
-            } catch (_: Throwable) {
-                NotifyGuard.openNotificationSettings(this@AboutActivity)
-                Toast.makeText(this, "体检临时没查成，先带你去系统通知设置看看", Toast.LENGTH_LONG).show()
-            }
-        }
-        // 兜底按钮：判定出错时才显示，完全不依赖体检逻辑，直接跳系统通知设置
-        notifyFallbackBtn.setOnClickListener {
-            NotifyGuard.openNotificationSettings(this@AboutActivity)
-            Toast.makeText(this, "在这里检查通知权限、渠道与后台设置哦", Toast.LENGTH_LONG).show()
-        }
+        // 「通知体检」：把「退出后收不到通知」拆成一项项可查、可一键修的开关
+        notifyCheckBtn.setOnClickListener { NotifyGuard.showReport(this@AboutActivity) }
 
         // ---- 屏幕常亮：两个左右滑动开关 ----
         // UI 界面常亮：打开 App 时（任意界面）屏幕保持常亮、不锁屏（功能与旧版一致）
@@ -379,7 +357,6 @@ class AboutActivity : Activity() {
             UpdateNotifier.openSettings(this)
         }
         refreshState()
-        refreshDiagnosticButtons()
         refreshUpdateMode()
     }
 
@@ -457,29 +434,6 @@ class AboutActivity : Activity() {
             .filter { it.isNotEmpty() }.joinToString("\n")
     }
 
-    /**
-     * 按当前状态收起两个「排障」按钮，没事别打扰：
-     * - 「通知小体检」：体检项全部正常时没有可修的，收起入口；
-     * - 「允许后台运行」：已经允许后台（电池优化已关）时不必再引导。
-     * 从系统设置返回后 onResume 会重新判定，按钮自动出现 / 消失。
-     */
-    private fun refreshDiagnosticButtons() {
-        if (!::batteryBtn.isInitialized || !::notifyCheckBtn.isInitialized ||
-            !::notifyFallbackBtn.isInitialized) return
-        val batteryOk = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val pm = getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
-            pm.isIgnoringBatteryOptimizations(packageName)
-        } else true
-        batteryBtn.visibility = if (batteryOk) View.GONE else View.VISIBLE
-
-        // 体检判定出错时绝不能误藏：体检按钮照常显示，并额外亮出兜底按钮，
-        // 保证哪怕系统 API 抽风，用户也有一个不依赖体检逻辑的入口去手动排查。
-        val result = NotifyGuard.checkSafe(this)
-        val allOk = result.allOk && !result.error
-        notifyCheckBtn.visibility = if (allOk) View.GONE else View.VISIBLE
-        notifyFallbackBtn.visibility = if (result.error) View.VISIBLE else View.GONE
-    }
-
     /** 按偏好回填屏幕常亮 / 锁屏通知开关（程序化设置时抑制回调）。 */
     private fun refreshKeepSwitches() {
         if (!::uiKeepSwitch.isInitialized) return
@@ -515,9 +469,6 @@ class AboutActivity : Activity() {
         sb.append("\n")
         sb.append("展开中的倒计时 ").append(live).append(" 条 · 刷新服务：")
         sb.append(if (svc) "运行中（锁屏后靠它跳秒）" else "没在跑（回主界面会自动拉起）")
-        sb.append("\n锁屏通知渠道：")
-        sb.append(if (LockScreenClock.channelHealthy(this)) "正常（高优先级、锁屏可见）"
-                  else "曾被调成静默 / 关闭 —— 打开 App 会自动修复，仍不行请点「通知小体检」")
         if (on && live == 0) {
             sb.append("\n（还没展开过任何倒计时，先在列表里把要看的那条「展开」一下）")
         }
@@ -630,16 +581,8 @@ class AboutActivity : Activity() {
         }
     }
 
-    /** v211：版本号走远程同步清单（GitHub 改版本号即同步显示），拉取成功后也会主动回调刷新。 */
-    fun refreshVersionText() {
-        if (::versionTv.isInitialized) {
-            versionTv.text = "版本 v${RemoteSkin.versionName(UpdateManager.currentVersionName(this))}"
-        }
-    }
-
     override fun onResume() {
         super.onResume()
-        refreshVersionText()
         // 屏幕常亮（UI 界面）：进入本页也按开关状态决定是否常亮
         ScreenKeepOn.apply(this)
         // 从「允许安装未知应用」设置页返回后，继续之前挂起的安装
@@ -654,7 +597,6 @@ class AboutActivity : Activity() {
             Toast.makeText(this, "已经是最新版本啦", Toast.LENGTH_SHORT).show()
         }
         refreshState()
-        refreshDiagnosticButtons()
         refreshUpdateMode()
         refreshKeepSwitches()
         refreshTimeFormat()
