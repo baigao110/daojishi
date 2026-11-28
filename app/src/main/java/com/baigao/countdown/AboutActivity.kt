@@ -46,6 +46,8 @@ class AboutActivity : Activity() {
     private lateinit var testBtn: Button
     private lateinit var batteryBtn: Button
     private lateinit var notifyCheckBtn: Button
+    /** 体检判定出错时的兜底入口：不依赖体检逻辑，直接跳系统通知设置。 */
+    private lateinit var notifyFallbackBtn: Button
     private lateinit var disclaimerBtn: Button
     private lateinit var checkStateTv: TextView
     private lateinit var updateModeDescTv: TextView
@@ -96,6 +98,7 @@ class AboutActivity : Activity() {
         testBtn = findViewById(R.id.testBtn)
         batteryBtn = findViewById(R.id.batteryBtn)
         notifyCheckBtn = findViewById(R.id.notifyCheckBtn)
+        notifyFallbackBtn = findViewById(R.id.notifyFallbackBtn)
         updateModeSpinner = findViewById(R.id.updateModeSpinner)
         updateModeDescTv = findViewById(R.id.updateModeDescTv)
         checkStateTv = findViewById(R.id.checkStateTv)
@@ -201,8 +204,21 @@ class AboutActivity : Activity() {
         }
         // 「允许后台运行」：关掉电池优化，后台检查才不会被系统掐断
         batteryBtn.setOnClickListener { requestIgnoreBattery() }
-        // 「通知体检」：把「退出后收不到通知」拆成一项项可查、可一键修的开关
-        notifyCheckBtn.setOnClickListener { NotifyGuard.showReport(this@AboutActivity) }
+        // 「通知体检」：把「退出后收不到通知」拆成一项项可查、可一键修的开关。
+        // 万一判定/弹窗过程出异常，兜底直接跳系统通知设置，绝不让用户没入口。
+        notifyCheckBtn.setOnClickListener {
+            try {
+                NotifyGuard.showReport(this@AboutActivity)
+            } catch (_: Throwable) {
+                NotifyGuard.openNotificationSettings(this@AboutActivity)
+                Toast.makeText(this, "体检临时没查成，先带你去系统通知设置看看", Toast.LENGTH_LONG).show()
+            }
+        }
+        // 兜底按钮：判定出错时才显示，完全不依赖体检逻辑，直接跳系统通知设置
+        notifyFallbackBtn.setOnClickListener {
+            NotifyGuard.openNotificationSettings(this@AboutActivity)
+            Toast.makeText(this, "在这里检查通知权限、渠道与后台设置哦", Toast.LENGTH_LONG).show()
+        }
 
         // ---- 屏幕常亮：两个左右滑动开关 ----
         // UI 界面常亮：打开 App 时（任意界面）屏幕保持常亮、不锁屏（功能与旧版一致）
@@ -446,14 +462,20 @@ class AboutActivity : Activity() {
      * 从系统设置返回后 onResume 会重新判定，按钮自动出现 / 消失。
      */
     private fun refreshDiagnosticButtons() {
-        if (!::batteryBtn.isInitialized || !::notifyCheckBtn.isInitialized) return
+        if (!::batteryBtn.isInitialized || !::notifyCheckBtn.isInitialized ||
+            !::notifyFallbackBtn.isInitialized) return
         val batteryOk = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val pm = getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
             pm.isIgnoringBatteryOptimizations(packageName)
         } else true
         batteryBtn.visibility = if (batteryOk) View.GONE else View.VISIBLE
-        val allOk = try { NotifyGuard.allOk(this) } catch (_: Throwable) { false }
+
+        // 体检判定出错时绝不能误藏：体检按钮照常显示，并额外亮出兜底按钮，
+        // 保证哪怕系统 API 抽风，用户也有一个不依赖体检逻辑的入口去手动排查。
+        val result = NotifyGuard.checkSafe(this)
+        val allOk = result.allOk && !result.error
         notifyCheckBtn.visibility = if (allOk) View.GONE else View.VISIBLE
+        notifyFallbackBtn.visibility = if (result.error) View.VISIBLE else View.GONE
     }
 
     /** 按偏好回填屏幕常亮 / 锁屏通知开关（程序化设置时抑制回调）。 */
