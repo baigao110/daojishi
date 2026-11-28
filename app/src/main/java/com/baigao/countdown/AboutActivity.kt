@@ -143,7 +143,7 @@ class AboutActivity : Activity() {
         }
         timeFormatSpinner = findViewById(R.id.timeFormatSpinner)
         timeFormatDescTv = findViewById(R.id.timeFormatDescTv)
-        versionTv.text = "版本 v${RemoteSkin.versionName(UpdateManager.currentVersionName(this))}"
+        refreshVersionText()
         // 「倒计时的项目主页」：复制具体网址到剪贴板并弹出浏览器选择（功能同前，仅文字改了）
         findViewById<TextView>(R.id.githubLinkTv).setOnClickListener {
             val url = "https://github.com/baigao110/daojishi"
@@ -630,8 +630,16 @@ class AboutActivity : Activity() {
         }
     }
 
+    /** v211：版本号走远程同步清单（GitHub 改版本号即同步显示），拉取成功后也会主动回调刷新。 */
+    fun refreshVersionText() {
+        if (::versionTv.isInitialized) {
+            versionTv.text = "版本 v${RemoteSkin.versionName(UpdateManager.currentVersionName(this))}"
+        }
+    }
+
     override fun onResume() {
         super.onResume()
+        refreshVersionText()
         // 屏幕常亮（UI 界面）：进入本页也按开关状态决定是否常亮
         ScreenKeepOn.apply(this)
         // 从「允许安装未知应用」设置页返回后，继续之前挂起的安装
