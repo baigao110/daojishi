@@ -139,17 +139,6 @@
         </LinearLayout>
 
         <Button
-            android:id="@+id/configBtn"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:layout_marginTop="10dp"
-            android:text="界面 / 功能配置（远程同步）"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:textColor="#001018"
-            android:background="@drawable/circle_btn" />
-
-        <Button
             android:id="@+id/disclaimerBtn"
             android:layout_width="260dp"
             android:layout_height="46dp"
@@ -221,19 +210,6 @@
             android:textStyle="bold"
             android:textColor="#001018"
             android:background="@drawable/circle_btn" />
-
-        <!-- 体检判定出错时的兜底入口，默认隐藏，判定出错才显示 -->
-        <Button
-            android:id="@+id/notifyFallbackBtn"
-            android:layout_width="260dp"
-            android:layout_height="46dp"
-            android:layout_marginTop="10dp"
-            android:text="手动排查通知（打开系统设置）"
-            android:textSize="13sp"
-            android:textStyle="bold"
-            android:textColor="#001018"
-            android:background="@drawable/circle_btn"
-            android:visibility="gone" />
 
         <!-- 屏幕常亮：拆成「UI 界面常亮」与「悬浮框常亮」两个左右滑动开关 -->
         <LinearLayout
