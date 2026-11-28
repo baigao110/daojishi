@@ -547,6 +547,7 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         UpdateManager.refreshCurrentVersion(applicationContext)
         setContentView(R.layout.activity_main)
+        injectDynamicBar()
 
         removedPrefs = getSharedPreferences("builtin_removed", MODE_PRIVATE)
         removedBuiltIns.clear()
@@ -719,12 +720,16 @@ class MainActivity : Activity() {
         // 圆钮更小（40dp）所以能把半径收到 115dp，四项真正紧凑地贴近加号四周排成扇形，互不重叠；
         // 「找回小内置」是条件项（仅当确有内置不在列表时出现）。
         // 角度映射：About(正上偏左15°) → Medicine(41°) → Add(67°) → Restore(水平左93°，条件项)
-        animateItemOut(menuItemAbout, -dp(38), -dp(119), 130)
-        animateItemOut(menuItemMedicine, -dp(83), -dp(95), 65)
-        animateItemOut(menuItemAdd, -dp(114), -dp(53), 0)
+        // v1.0.0.66：远程配置可隐藏指定菜单项（默认都开，零配置时行为不变）
+        if (RemoteSkin.feature("menuAbout", true)) animateItemOut(menuItemAbout, -dp(38), -dp(119), 130)
+        else menuItemAbout.visibility = View.GONE
+        if (RemoteSkin.feature("menuMedicine", true)) animateItemOut(menuItemMedicine, -dp(83), -dp(95), 65)
+        else menuItemMedicine.visibility = View.GONE
+        if (RemoteSkin.feature("menuAdd", true)) animateItemOut(menuItemAdd, -dp(114), -dp(53), 0)
+        else menuItemAdd.visibility = View.GONE
         // 「恢复内置」只在确实有内置倒计时不在列表里时才出现；
         // 四个都在列表时整项隐藏，点了加号也不会出现这一项。
-        if (missingBuiltIns().isNotEmpty()) {
+        if (RemoteSkin.feature("menuRestore", true) && missingBuiltIns().isNotEmpty()) {
             animateItemOut(menuItemRestore, -dp(123), -dp(2), 195)
         } else {
             menuItemRestore.visibility = View.GONE
@@ -893,6 +898,53 @@ class MainActivity : Activity() {
     }
 
     /** 用数据重建整个列表（数据变化/进入编辑返回后调用；每秒刷新仅更新时间文本，不重建）。 */
+    /**
+     * v1.0.0.66：把远程配置里的「动态功能按钮」注入到标题与列表之间。
+     * 不进 listContainer，避免干扰原有拖动排序 / 多选逻辑；零配置时不加任何控件。
+     */
+    fun refreshDynamicBar() { injectDynamicBar() }
+
+    private fun injectDynamicBar() {
+        val scroll = findViewById<View>(R.id.scroll) ?: return
+        val host = scroll.parent as? LinearLayout ?: return
+
+        // 先清掉上一次注入的，避免重复刷新时叠加
+        for (i in host.childCount - 1 downTo 0) {
+            val ch = host.getChildAt(i)
+            if (ch.tag as? String == "dynbar") host.removeViewAt(i)
+        }
+
+        val actions = RemoteSkin.actions()
+        val mods = DynamicFeature.loadedModules()
+        if (actions.isEmpty() && mods.isEmpty()) return
+        val bar = LinearLayout(this).apply {
+            tag = "dynbar"
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(0, 0, 0, dp(6))
+        }
+        fun addChip(label: String, click: () -> Unit) {
+            val cb = Button(this@MainActivity).apply {
+                text = label
+                textSize = 12f
+                isAllCaps = false
+                setTextColor(0xFF001018.toInt())
+                setBackgroundResource(R.drawable.fab_accent)
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                    setMargins(0, 0, dp(4), 0)
+                }
+            }
+            cb.setOnClickListener { click() }
+            bar.addView(cb)
+        }
+        for (a in actions) addChip(a.label) { DynamicFeature.runAction(this@MainActivity, a) }
+        for ((name, m) in mods) addChip(m.label) {
+            val t = DynamicFeature.invokeModule(this@MainActivity, name)
+            if (t.isNotBlank()) Toast.makeText(this@MainActivity, t, Toast.LENGTH_LONG).show()
+        }
+        val idx = host.indexOfChild(scroll).coerceAtLeast(0)
+        host.addView(bar, idx)
+    }
+
     fun rebuildList() {
         // 面板是贴着某一行弹出来的，行一摘掉就得跟着收，否则它会飘在做别的卡片上面
         dismissPickPopup()
