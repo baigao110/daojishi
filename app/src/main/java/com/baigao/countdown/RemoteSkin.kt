@@ -76,21 +76,32 @@ object RemoteSkin {
         val modules: List<Module> = emptyList(),
         val updatedAt: String? = null,
         val visibility: Map<String, Boolean> = emptyMap(),   // v207：view id/tag -> true显示/false隐藏（功能删除即隐藏）
-        val viewStyles: Map<String, ViewStyle> = emptyMap()  // v207：view id/tag -> 精确颜色
+        val viewStyles: Map<String, ViewStyle> = emptyMap(), // v207：view id/tag -> 精确颜色
+        val syncRevision: Long = 0L,                          // v211：同步清单修订号
+        val manifestVersionName: String? = null              // v211：清单里的版本号（独立于 enabled）
     )
 
     /** 内置默认强调色（与历史玻璃主题一致）。 */
     const val DEFAULT_ACCENT = 0xFF00D8FF.toInt()
     const val DEFAULT_ACCENT_DEEP = 0xFF00C2D9.toInt()
 
+    /** 仓库 raw 根（清单里可写相对文件名，拼接成本地址）。 */
+    private const val RAW_BASE =
+        "https://raw.githubusercontent.com/baigao110/daojishi/main/"
+
     /** 远程配置文件地址（仓库默认分支 main）。 */
-    const val CONFIG_URL =
-        "https://raw.githubusercontent.com/baigao110/daojishi/main/ui_config.json"
+    const val CONFIG_URL = RAW_BASE + "ui_config.json"
+
+    /** v211：同步清单 —— 登记版本号 / 修订号 / 配置片段，任一文件增删改即触发全量同步。 */
+    const val MANIFEST_URL = RAW_BASE + "sync_manifest.json"
 
     private const val PREF = "remote_skin_v1"
     private const val K_REMOTE = "remote_json"
     private const val K_LOCAL = "local_json"
     private const val K_REMOTE_AT = "remote_at"
+    private const val K_MANIFEST_SIG = "manifest_sig"  // v211：清单+配置+片段联合签名，任一变化即重应用
+    private const val K_MANIFEST_VER = "manifest_ver"  // v211：清单版本号（独立于本地覆盖）
+    private const val K_MANIFEST_REV = "manifest_rev"  // v211：清单修订号
 
     private val main = Handler(Looper.getMainLooper())
     private val fetching = AtomicBoolean(false)
@@ -102,6 +113,11 @@ object RemoteSkin {
     private var json: JSONObject = JSONObject()
     @Volatile
     private var state: State = State()
+    /** v211：清单元数据独立缓存，保证版本号同步不受「本地配置覆盖」影响。 */
+    @Volatile
+    private var manifestVer: String? = null
+    @Volatile
+    private var manifestRev: Long = 0L
 
     private fun prefs(ctx: Context): SharedPreferences =
         ctx.applicationContext.getSharedPreferences(PREF, Context.MODE_PRIVATE)
@@ -110,13 +126,58 @@ object RemoteSkin {
     /** 进程启动时调用：先读缓存立即生效，再异步拉最新。 */
     fun init(ctx: Context) {
         val p = prefs(ctx)
+        // 先恢复清单元数据（版本号 / 修订号），确保本地覆盖时版本号仍同步
+        manifestVer = p.getString(K_MANIFEST_VER, "")?.takeIf { it.isNotBlank() }
+        manifestRev = p.getLong(K_MANIFEST_REV, 0L)
         val raw = p.getString(K_LOCAL, null)?.takeIf { it.isNotBlank() }
             ?: p.getString(K_REMOTE, null)?.takeIf { it.isNotBlank() }
         if (raw != null) applyJson(raw)
         refresh(ctx, null)
     }
 
-    /** 异步拉取远程配置；成功写缓存并即时生效。callback 在主线程回调 (ok, msg)。 */
+    /** 异步拉取一个 URL 的文本，失败返回 null（每个文件独立吞异常，一个坏了不影响其它）。 */
+    private fun fetchText(url: String): String? = try {
+        val conn = URL(url).openConnection() as HttpURLConnection
+        conn.connectTimeout = 8000
+        conn.readTimeout = 8000
+        conn.requestMethod = "GET"
+        conn.setRequestProperty("User-Agent", "countdown-sync/211")
+        if (conn.responseCode != 200) { conn.disconnect(); null } else {
+            val text = conn.inputStream.use { ins ->
+                BufferedReader(InputStreamReader(ins, "UTF-8")).use { r ->
+                    val sb = StringBuilder()
+                    var line: String?
+                    while (r.readLine().also { line = it } != null) sb.append(line).append('\n')
+                    sb.toString()
+                }
+            }
+            conn.disconnect()
+            text
+        }
+    } catch (_: Throwable) { null }
+
+    /**
+     * 深度合并：extra 覆盖 base。对象递归合并，数组整体替换（所以「删掉一个 action」= 新数组里不含它）。
+     * 这样 GitHub 上任意一个配置片段改了 / 加了 / 删了，最终配置都能反映。
+     */
+    private fun deepMerge(base: JSONObject, extra: JSONObject) {
+        val keys = extra.keys()
+        while (keys.hasNext()) {
+            val k = keys.next()
+            val v = extra.opt(k)
+            if (v is JSONObject && base.opt(k) is JSONObject) {
+                deepMerge(base.getJSONObject(k), v)
+            } else {
+                base.put(k, v)
+            }
+        }
+    }
+
+    /**
+     * v211：异步拉取清单 + 主配置 + 全部片段；任一文件增删改 → 全量重新应用。
+     * 清单负责登记 revision / versionName / fragments；片段是相对或绝对 URL 的额外配置 JSON。
+     * callback 在主线程回调 (ok, msg)。
+     */
     fun refresh(ctx: Context, callback: ((Boolean, String) -> Unit)?) {
         if (!fetching.compareAndSet(false, true)) {
             callback?.invoke(true, "正在拉取，请稍候")
@@ -125,45 +186,80 @@ object RemoteSkin {
         Thread {
             var ok = false
             var msg = ""
+            var changed = false
             try {
-                val conn = URL(CONFIG_URL).openConnection() as HttpURLConnection
-                conn.connectTimeout = 8000
-                conn.readTimeout = 8000
-                conn.requestMethod = "GET"
-                conn.setRequestProperty("User-Agent", "countdown-skin/1.0")
-                val code = conn.responseCode
-                if (code == 200) {
-                    val text = conn.inputStream.use { ins ->
-                        BufferedReader(InputStreamReader(ins, "UTF-8")).use { r ->
-                            val sb = StringBuilder()
-                            var line: String?
-                            while (r.readLine().also { line = it } != null) sb.append(line).append('\n')
-                            sb.toString()
+                // 1) 清单（版本号 / 修订号 / 受控文件清单）
+                // 清单没拉到时沿用内存/缓存值，绝不把版本号退回 APK 真实版本（断网也保持稳定）
+                val manifestText = fetchText(MANIFEST_URL)
+                val mo = manifestText?.let { runCatching { JSONObject(it) }.getOrNull() }
+                var revision = this@RemoteSkin.manifestRev
+                var manifestVer = this@RemoteSkin.manifestVer
+                if (mo != null) {
+                    revision = mo.optLong("revision", revision)
+                    manifestVer = mo.optString("versionName").takeIf { it.isNotBlank() } ?: manifestVer
+                }
+
+                // 2) 主配置 ui_config.json
+                val mainText = fetchText(CONFIG_URL)
+                if (mainText.isNullOrBlank()) {
+                    msg = "同步失败：主配置没拉到（继续用缓存）"
+                } else {
+                    // 3) 深度合并主配置 + 清单里的全部片段
+                    val merged = JSONObject(mainText)
+                    val fragments = mo?.optJSONArray("fragments")
+                    if (fragments != null) {
+                        for (i in 0 until fragments.length()) {
+                            val raw = fragments.optString(i).takeIf { it.isNotBlank() } ?: continue
+                            val url = if (raw.startsWith("http")) raw else RAW_BASE + raw
+                            val fragText = fetchText(url) ?: continue
+                            val fo = runCatching { JSONObject(fragText) }.getOrNull() ?: continue
+                            deepMerge(merged, fo)
                         }
                     }
+                    // 清单版本号 / 修订号独立缓存 —— 不受本地覆盖影响
+                    this@RemoteSkin.manifestVer = manifestVer
+                    this@RemoteSkin.manifestRev = revision
+                    merged.put("_syncRevision", revision)
+                    if (manifestVer != null) merged.put("_manifestVersion", manifestVer)
+                    val finalText = merged.toString()
+
                     // 先解析校验，坏了就别覆盖缓存
-                    parse(JSONObject(text))
-                    prefs(ctx).edit()
-                        .putString(K_REMOTE, text)
+                    parse(JSONObject(finalText))
+                    val p = prefs(ctx)
+                    val sig = revision.toString() + "|" + (manifestVer ?: "") + "|" + finalText.hashCode()
+                    changed = sig != p.getString(K_MANIFEST_SIG, "") ||
+                        p.getString(K_REMOTE, null) == null
+                    p.edit()
+                        .putString(K_REMOTE, finalText)
+                        .putString(K_MANIFEST_SIG, sig)
+                        .putString(K_MANIFEST_VER, manifestVer ?: "")
+                        .putLong(K_MANIFEST_REV, revision)
                         .putLong(K_REMOTE_AT, System.currentTimeMillis())
                         .apply()
-                    // 本地没覆盖时才把远程结果切到内存
-                    if (prefs(ctx).getString(K_LOCAL, null).isNullOrBlank()) {
-                        applyJson(text)
+                    // 本地没覆盖时才把远程结果切到内存；
+                    // 有本地覆盖时也要把最新版本号即时推到当前 state（版本号始终跟随 GitHub）
+                    if (p.getString(K_LOCAL, null).isNullOrBlank()) applyJson(finalText)
+                    else {
+                        val o = JSONObject(p.getString(K_LOCAL, null))
+                        o.put("_syncRevision", revision)
+                        if (manifestVer != null) o.put("_manifestVersion", manifestVer)
+                        applyJson(o.toString())
                     }
                     ok = true
-                    msg = "已从 GitHub 同步最新界面配置"
-                } else {
-                    msg = "同步失败：HTTP $code（继续用缓存）"
+                    msg = "已从 GitHub 同步最新界面 / 功能（修订 $revision）"
                 }
-                conn.disconnect()
             } catch (t: Throwable) {
                 msg = "同步失败：${t.javaClass.simpleName}（继续用缓存）"
             } finally {
                 fetching.set(false)
-                val o = ok; val m = msg
+                val o = ok; val m = msg; val c = changed
                 main.post {
-                    if (o) CountdownApp.applyToCurrent()
+                    if (o) {
+                        // 有改动：全量重新换肤 + 重建动态栏（功能增删改即时生效）
+                        CountdownApp.applyToCurrent()
+                        // 远程 modules 增删后重新加载 dex，做到「加功能/删功能」即时生效
+                        if (c) try { DynamicFeature.loadAll(ctx, null) } catch (_: Throwable) { }
+                    }
                     callback?.invoke(o, m)
                 }
             }
@@ -201,6 +297,9 @@ object RemoteSkin {
     private fun applyJson(raw: String) {
         try {
             val o = JSONObject(raw)
+            // v211：清单元数据强制注入（即使来自本地覆盖），保证版本号始终跟随 GitHub
+            o.put("_syncRevision", manifestRev)
+            if (manifestVer != null) o.put("_manifestVersion", manifestVer)
             json = o
             state = parse(o)
         } catch (t: Throwable) {
@@ -286,7 +385,9 @@ object RemoteSkin {
             modules = modules,
             updatedAt = o.optString("updatedAt").takeIf { it.isNotBlank() },
             visibility = visibility,
-            viewStyles = viewStyles
+            viewStyles = viewStyles,
+            syncRevision = if (o.has("_syncRevision")) o.optLong("_syncRevision") else 0L,
+            manifestVersionName = o.optString("_manifestVersion").takeIf { it.isNotBlank() }
         )
     }
 
@@ -308,8 +409,14 @@ object RemoteSkin {
     fun text(key: String, default: String): String =
         if (!state.enabled) default else state.texts[key] ?: default
 
+    /** v211：版本号优先取同步清单（独立于 enabled —— GitHub 改版本号即同步显示）。 */
     fun versionName(real: String): String =
-        if (state.enabled) state.versionName ?: real else real
+        state.manifestVersionName
+            ?: (if (state.enabled) state.versionName else null)
+            ?: real
+
+    /** v211：当前清单修订号（0 表示还没拉到清单）。 */
+    fun syncRevision(): Long = state.syncRevision
 
     fun feature(key: String, default: Boolean): Boolean =
         if (!state.enabled) default else state.features[key] ?: default
@@ -331,10 +438,10 @@ object RemoteSkin {
         if (state.enabled) state.texts[original] else null
 
     private var lastFetchAt = 0L
-    /** v207：界面 resume 时调用，距上次拉取超过 10 秒才真拉，做到「打开即同步」又不刷屏。 */
+    /** v211：界面 resume 即拉（1.5 秒防抖，避免一次操作内多个界面 resume 重复请求）。 */
     fun refreshIfStale(ctx: Context) {
         val now = System.currentTimeMillis()
-        if (now - lastFetchAt < 10_000L) return
+        if (now - lastFetchAt < 1_500L) return
         lastFetchAt = now
         refresh(ctx, null)
     }
