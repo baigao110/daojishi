@@ -178,6 +178,8 @@ class MedicineReminderActivity : Activity() {
         medStateTv.visibility = medVis
         medRowCalendar.visibility = medVis
         medRowTools.visibility = medVis
+        // 「后台自检」：吃药后台这一条链路都正常就收起入口，有问题 / 判定出错才显示
+        medCheckBtn.visibility = if (on && medicineSelfCheckAllOk()) View.GONE else View.VISIBLE
         val n = MedicineReminder.timesPerDay(this)
         medTimeBtn.text = if (n >= 2) "吃药时间（每天 $n 次哦）" else "首剂时间 ${MedicineReminder.timeText(this)}"
         medTimesSpinner.setSelection((n - 1).coerceIn(0, 3))
@@ -186,6 +188,23 @@ class MedicineReminderActivity : Activity() {
         medScheduleTv.visibility = medVis
         medStateTv.text = MedicineReminder.statusText(this)
         medNextBtn.text = "下次提醒\n${MedicineReminder.nextTriggerText(this)}"
+    }
+
+    /**
+     * 吃药后台自检是否「全部正常」——决定要不要收起「后台自检」按钮。
+     * 与自检弹窗里列出的每一项对齐：通知体检（权限 / 渠道 / 精确闹钟 / 电池 / 后台限制 / 巡检）
+     * 全过、通知权限已开、电池优化已关、守护服务不是「未运行」、且没有「到点被权限拦下」的记录。
+     * 任何一项判定出错都按「不正常」处理（宁可多显示，绝不误藏入口）。
+     */
+    private fun medicineSelfCheckAllOk(): Boolean = try {
+        val guard = NotifyGuard.checkSafe(this)
+        guard.allOk && !guard.error &&
+                UpdateNotifier.hasPermission(this) &&
+                !batteryOptimized() &&
+                MedicineReminder.lastBlockedText(this).isEmpty() &&
+                !MedicineReminder.guardStatusText(this).startsWith("守护服务：未运行")
+    } catch (_: Throwable) {
+        false
     }
 
     /** 吃药时间面板：编辑每天各次的时刻与「服药时机」；2 次及以上时首剂时间按钮即变为它。 */
