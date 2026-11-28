@@ -13,16 +13,14 @@ import android.widget.Toast
 import java.util.Calendar
 import java.util.Locale
 import android.text.SpannableStringBuilder
-import android.text.style.ForegroundColorSpan
 
 /**
  * 吃药日历：按月显示哪天吃了药、哪天没吃。
  *
- * - 已吃药（正常记录）：青色实心圆；补记：琥珀色实心圆 + 右上角「补」角标；
- *   未吃药（今天之前的日子）：淡红底；今天未吃：青色描边；未来日期：淡灰、不可点。
- * - 点过去 / 今天的格子先弹同款玻璃确认框：补记选「是」才记、撤销选「是」才撤，
- *   选「否」一律什么都不改；补记时间为当前时间，并登记「补记」标志。
- * - 顶部 ‹ › 切换月份，统计行显示本月已吃 / 未吃，以及补记 / 正常记录各多少天。
+ * - 已吃药：青色实心圆；未吃药（今天之前的日子）：淡红底；今天未吃：青色描边；
+ *   未来日期：淡灰、不可点。
+ * - 点过去 / 今天的格子可以补记或撤销；底部按钮一键记录今天。
+ * - 顶部 ‹ › 切换月份，统计行显示本月已吃 / 未吃天数。
  *
  * 风格沿用液态玻璃：glass_bg 底 + GlassBackdrop 光斑 + circle_btn 青色按钮。
  */
@@ -65,17 +63,13 @@ class MedicineCalendarActivity : Activity() {
         }
         todayBtn.setOnClickListener {
             val taken = MedicineReminder.isTaken(this)
-            if (taken) {
-                // v204：撤销记录也要先确认，选「否」就原样保留
-                confirmUndo("今天", MedicineReminder.todayKey())
-            } else {
-                MedicineReminder.setTaken(this, true)
-                val at = MedicineReminder.takenTimeText(this)
-                val msg = if (at.isNotEmpty()) "已经记下今天吃药啦（$at）"
-                    else "已经记下今天吃药啦"
-                Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
-                render()
-            }
+            MedicineReminder.setTaken(this, !taken)
+            val at = MedicineReminder.takenTimeText(this)
+            val msg = if (taken) "已经撤销今天的记录啦"
+                else if (at.isNotEmpty()) "已经记下今天吃药啦（$at）"
+                else "已经记下今天吃药啦"
+            Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+            render()
         }
         findViewById<Button>(R.id.timesBtn).setOnClickListener { showTimesPicker() }
         findViewById<Button>(R.id.doseEditBtn).setOnClickListener {
@@ -147,8 +141,6 @@ class MedicineCalendarActivity : Activity() {
         // ---------- 统计 ----------
         var took = 0
         var missed = 0
-        var makeup = 0
-        val mk = MedicineReminder.makeupKeys(this)
         for (d in 1..daysInMonth) {
             val c = shown.clone() as Calendar
             c.set(Calendar.DAY_OF_MONTH, d)
@@ -157,19 +149,13 @@ class MedicineCalendarActivity : Activity() {
                     (c.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
                             c.get(Calendar.DAY_OF_YEAR) > today.get(Calendar.DAY_OF_YEAR))
             if (isFuture) continue
-            if (taken.contains(key)) {
-                took++
-                if (mk.contains(key)) makeup++
-            } else missed++
+            if (taken.contains(key)) took++ else missed++
         }
-        val normal = took - makeup
         val medN = MedicineReminder.timesPerDay(this)
         val statBase = SpannableStringBuilder(
             "本月吃过 ${took} 天 · 还没吃 ${missed} 天" +
                     if (missed > 0) "（没吃药的日子可以在日历里补记哦）" else ""
         )
-        // v204：本月补记 / 正常记录各多少天，跟着格子实时刷新
-        statBase.append("\n本月补记 ${makeup} 天 · 正常记录 ${normal} 天")
         if (medN > 1) {
             statBase.append("\n每天会提醒 ${medN} 次哦：")
                 .append(MedicineReminder.doseScheduleSpannable(this))
@@ -188,21 +174,18 @@ class MedicineCalendarActivity : Activity() {
      * v1.0.0.65：本月吃药记录逐条显示「已吃药」的具体时间，
      * 统一格式 yyyy年MM月dd日 星期x HH时:mm分:ss秒（如 2026年11月22日 星期日 15时:56分:22秒）；
      * 升级前只记到日期的旧记录明确标注。
-     * v204：每条末尾带「（补记）」/「（正常）」标志，补记标琥珀色，一眼分得清。
      */
     private fun renderRecords(fmt: java.text.SimpleDateFormat, taken: Set<String>) {
-        val mk = MedicineReminder.makeupKeys(this)
-        val sb = SpannableStringBuilder("本月吃药记录 · 已吃药的具体时间")
-        val lines = ArrayList<Pair<String, Boolean>>()
+        val sb = StringBuilder("本月吃药记录 · 已吃药的具体时间")
+        val lines = ArrayList<String>()
         for (d in 1..shown.getActualMaximum(Calendar.DAY_OF_MONTH)) {
             val c = shown.clone() as Calendar
             c.set(Calendar.DAY_OF_MONTH, d)
             val key = fmt.format(c.time)
             if (!taken.contains(key)) continue
-            val isMakeup = mk.contains(key)
             val at = MedicineReminder.takenTimeText(this, key)
             if (at.isNotEmpty()) {
-                lines.add(at to isMakeup)
+                lines.add(at)
             } else {
                 val p = key.split("-")
                 val day = if (p.size == 3) "${p[0]}年${p[1]}月${p[2]}日" else key
@@ -211,25 +194,15 @@ class MedicineCalendarActivity : Activity() {
                     val y = p[0].toIntOrNull(); val mo = p[1].toIntOrNull(); val dy = p[2].toIntOrNull()
                     if (y != null && mo != null && dy != null) TargetTimeText.weekdayOfDate(y, mo - 1, dy) else ""
                 } else ""
-                val body = if (week.isEmpty()) "$day（旧记录只记到日期）"
-                    else "$day $week（旧记录只记到日期）"
-                lines.add(body to isMakeup)
+                lines.add(if (week.isEmpty()) "$day（旧记录只记到日期）" else "$day $week（旧记录只记到日期）")
             }
         }
         if (lines.isEmpty()) {
             sb.append("\n本月还没有吃药记录哦")
         } else {
-            for ((body, isMakeup) in lines.asReversed()) {
-                sb.append("\n").append(body)
-                val start = sb.length
-                sb.append(if (isMakeup) "（补记）" else "（正常）")
-                sb.setSpan(
-                    ForegroundColorSpan(if (isMakeup) 0xFFFFC24D.toInt() else 0xFF7CF6C8.toInt()),
-                    start, sb.length, SpannableStringBuilder.SPAN_EXCLUSIVE_EXCLUSIVE
-                )
-            }
+            for (s in lines.asReversed()) sb.append("\n").append(s)
         }
-        recordTv.text = sb
+        recordTv.text = sb.toString()
     }
 
     private fun cellView(day: Int, fmt: java.text.SimpleDateFormat, taken: Set<String>): FrameLayout {
@@ -246,7 +219,6 @@ class MedicineCalendarActivity : Activity() {
         val isFuture = (c.get(Calendar.YEAR) > today.get(Calendar.YEAR)) ||
                 (sameYear && c.get(Calendar.DAY_OF_YEAR) > today.get(Calendar.DAY_OF_YEAR))
         val isTaken = taken.contains(key)
-        val isMakeup = isTaken && MedicineReminder.isMakeup(this, key)
 
         val tv = TextView(this)
         tv.text = day.toString()
@@ -255,11 +227,6 @@ class MedicineCalendarActivity : Activity() {
         tv.setShadowLayer(2f, 0f, 1f, 0xCC000000.toInt())
 
         when {
-            isMakeup -> {
-                // v204：补记用琥珀实心圆，和正常记录的青色实心圆一眼分得开
-                tv.background = bubble(0xFFFFC24D.toInt(), 0)
-                tv.setTextColor(0xFF3A2000.toInt())
-            }
             isTaken -> {
                 tv.background = bubble(0xFF00FFFF.toInt(), 0)
                 tv.setTextColor(0xFF001018.toInt())
@@ -282,28 +249,17 @@ class MedicineCalendarActivity : Activity() {
         lp.gravity = Gravity.CENTER
         box.addView(tv, lp)
 
-        // v204：右上角「补」角标，落在圆形右上角外侧，不压住日期数字
-        if (isMakeup) {
-            val badge = TextView(this)
-            badge.text = "补"
-            badge.gravity = Gravity.CENTER
-            badge.textSize = 8f
-            badge.setTextColor(0xFF3A2000.toInt())
-            badge.background = GradientDrawable().apply {
-                shape = GradientDrawable.OVAL
-                setColor(0xFFFFF3D0.toInt())
-                setStroke(dp(1), 0xFFE08A00.toInt())
-            }
-            val bp = FrameLayout.LayoutParams(dp(14), dp(14))
-            bp.gravity = Gravity.TOP or Gravity.END
-            box.addView(badge, bp)
-        }
-
-        // 过去与今天的格子可点：先弹同款玻璃确认框，选「是」才补记 / 撤销
+        // 过去与今天的格子可点：补记 / 撤销
         if (!isFuture) {
             box.setOnClickListener {
-                if (MedicineReminder.isTaken(this, key)) confirmUndo(monthLabel(day), key)
-                else confirmMakeup(monthLabel(day), key)
+                val nowTaken = MedicineReminder.isTaken(this, key)
+                MedicineReminder.setTaken(this, !nowTaken, key)
+                val at = MedicineReminder.takenTimeText(this, key)
+                val msg = if (nowTaken) "已经撤销 ${monthLabel(day)} 的记录啦"
+                    else if (at.isNotEmpty()) "已经补记 ${monthLabel(day)} 啦（$at）"
+                    else "已经补记 ${monthLabel(day)} 啦"
+                Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+                render()
             }
         }
         return box
@@ -311,80 +267,6 @@ class MedicineCalendarActivity : Activity() {
 
     private fun monthLabel(day: Int): String =
         "${shown.get(Calendar.MONTH) + 1}月${day}日"
-
-    /** 两个确认框共用的正文样式：与「关于」页、更新提示等玻璃提示框一致。 */
-    private fun dialogText(s: String): TextView = TextView(this).apply {
-        text = s
-        setTextColor(0xFFE4EEFF.toInt())
-        textSize = 14f
-        setLineSpacing(0f, 1.45f)
-        setShadowLayer(2f, 0f, 1f, 0xCC000000.toInt())
-        setPadding(dp(4), dp(6), dp(4), dp(6))
-        layoutParams = LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT
-        )
-    }
-
-    /**
-     * v204 补记确认框：选「是」才补记，选「否」什么都不改。
-     * 补记的时间就是当前时间（setTaken 写 System.currentTimeMillis()），
-     * 并登记补记标志，日历格子与本月记录都会标上「补记」。
-     */
-    private fun confirmMakeup(label: String, key: String) {
-        if (isFinishing) return
-        val now = MedicineReminder.currentTimeText()
-        UpdateManager.showStyledDialog(
-            activity = this,
-            title = "要补记这一天的吃药记录吗",
-            positiveText = "是",
-            negativeText = "否",
-            cancelable = true,
-            onPositive = {
-                MedicineReminder.setTaken(this, true, key, makeup = true)
-                val at = MedicineReminder.takenTimeText(this, key)
-                val msg = if (at.isNotEmpty()) "已经补记 $label 啦（$at · 补记）"
-                    else "已经补记 $label 啦（补记）"
-                Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
-                render()
-            }
-        ) { host ->
-            host.addView(
-                dialogText(
-                    "要把 $label 记为「已吃药」吗？\n\n" +
-                            "选「是」就补记，时间记为当前时间：\n$now\n" +
-                            "日历格子和本月记录里都会标上「补记」，和正常记录区分开；\n" +
-                            "选「否」就不补记，什么都不改。"
-                )
-            )
-        }
-    }
-
-    /** v204 撤销确认框：选「是」才撤销记录，选「否」原样保留。 */
-    private fun confirmUndo(label: String, key: String) {
-        if (isFinishing) return
-        UpdateManager.showStyledDialog(
-            activity = this,
-            title = "要撤销这一天的吃药记录吗",
-            positiveText = "是",
-            negativeText = "否",
-            cancelable = true,
-            onPositive = {
-                MedicineReminder.setTaken(this, false, key)
-                Toast.makeText(this, "已经撤销 $label 的记录啦", Toast.LENGTH_SHORT).show()
-                render()
-            }
-        ) { host ->
-            host.addView(
-                dialogText(
-                    "要把 $label 的吃药记录撤销吗？\n\n" +
-                            "选「是」就撤销，这一天会重新变成「还没吃」，" +
-                            "记录的具体时间和补记标志也一并清掉；\n" +
-                            "选「否」就不撤销，记录原样保留。"
-                )
-            )
-        }
-    }
 
     /** 「每天次数」选择：1/2/3/4 次（与「关于」页同一逻辑）。 */
     private fun showTimesPicker() {
