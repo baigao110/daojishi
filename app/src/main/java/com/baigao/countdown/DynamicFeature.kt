@@ -70,7 +70,13 @@ object DynamicFeature {
             } finally {
                 loading.set(false)
                 val count = n
-                main.post { callback?.invoke(count) }
+                main.post {
+                    // v1.0.0.66 试跑修复：dex 是异步加载的，加载完必须主动刷新界面，
+                    // 否则主界面 onCreate 时模块还没就位、动态栏按钮永远出不来。
+                    // applyToCurrent 内部会重建动态栏（refreshDynamicBar），并顺带重新换肤。
+                    if (count > 0) CountdownApp.applyToCurrent()
+                    callback?.invoke(count)
+                }
             }
         }.apply { isDaemon = true; name = "dynamic-feature-load" }.start()
     }
