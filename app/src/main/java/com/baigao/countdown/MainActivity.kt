@@ -547,7 +547,7 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         UpdateManager.refreshCurrentVersion(applicationContext)
         setContentView(R.layout.activity_main)
-        injectDynamicBar()
+        refreshDynamicBar()
 
         removedPrefs = getSharedPreferences("builtin_removed", MODE_PRIVATE)
         removedBuiltIns.clear()
@@ -907,48 +907,7 @@ class MainActivity : Activity() {
      * v1.0.0.66：把远程配置里的「动态功能按钮」注入到标题与列表之间。
      * 不进 listContainer，避免干扰原有拖动排序 / 多选逻辑；零配置时不加任何控件。
      */
-    fun refreshDynamicBar() { injectDynamicBar() }
-
-    private fun injectDynamicBar() {
-        val scroll = findViewById<View>(R.id.scroll) ?: return
-        val host = scroll.parent as? LinearLayout ?: return
-
-        // 先清掉上一次注入的，避免重复刷新时叠加
-        for (i in host.childCount - 1 downTo 0) {
-            val ch = host.getChildAt(i)
-            if (ch.tag as? String == "dynbar") host.removeViewAt(i)
-        }
-
-        val actions = RemoteSkin.actions()
-        val mods = DynamicFeature.loadedModules()
-        if (actions.isEmpty() && mods.isEmpty()) return
-        val bar = LinearLayout(this).apply {
-            tag = "dynbar"
-            orientation = LinearLayout.HORIZONTAL
-            setPadding(0, 0, 0, dp(6))
-        }
-        fun addChip(label: String, click: () -> Unit) {
-            val cb = Button(this@MainActivity).apply {
-                text = label
-                textSize = 12f
-                isAllCaps = false
-                setTextColor(0xFF001018.toInt())
-                setBackgroundResource(R.drawable.fab_accent)
-                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
-                    setMargins(0, 0, dp(4), 0)
-                }
-            }
-            cb.setOnClickListener { click() }
-            bar.addView(cb)
-        }
-        for (a in actions) addChip(a.label) { DynamicFeature.runAction(this@MainActivity, a) }
-        for ((name, m) in mods) addChip(m.label) {
-            val t = DynamicFeature.invokeModule(this@MainActivity, name)
-            if (t.isNotBlank()) Toast.makeText(this@MainActivity, t, Toast.LENGTH_LONG).show()
-        }
-        val idx = host.indexOfChild(scroll).coerceAtLeast(0)
-        host.addView(bar, idx)
-    }
+    fun refreshDynamicBar() { RemoteSkin.injectDynamicBar(this) }
 
     fun rebuildList() {
         // 面板是贴着某一行弹出来的，行一摘掉就得跟着收，否则它会飘在做别的卡片上面
