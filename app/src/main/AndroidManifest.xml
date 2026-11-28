@@ -26,7 +26,6 @@
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <application
-        android:name=".CountdownApp"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -53,11 +52,6 @@
 
         <activity
             android:name=".AboutActivity"
-            android:exported="false" />
-
-        <!-- v1.0.0.66：App 内界面 / 功能配置编辑器 -->
-        <activity
-            android:name=".ConfigEditorActivity"
             android:exported="false" />
 
         <!-- 吃药提醒设置页：从主界面「+」号菜单的「吃药提醒」进入 -->
