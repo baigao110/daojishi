@@ -26,7 +26,11 @@ class CountdownApp : Application() {
             val a = current ?: return
             main.post {
                 try { RemoteSkin.apply(a) } catch (_: Throwable) { }
-                try { (a as? MainActivity)?.refreshDynamicBar() } catch (_: Throwable) { }
+                // v207：对所有界面重建动态栏（Main 仍走自己的 refresh，其它界面走通用注入；
+                // 两者都先清 tag=dynbar 旧栏，不会重复叠加）。
+                try {
+                    if (a is MainActivity) a.refreshDynamicBar() else RemoteSkin.injectDynamicBar(a)
+                } catch (_: Throwable) { }
             }
         }
 
@@ -44,6 +48,12 @@ class CountdownApp : Application() {
             override fun onActivityResumed(a: Activity) {
                 current = a
                 try { RemoteSkin.apply(a) } catch (t: Throwable) { }
+                // v207：每个界面进入时都重建动态栏 + 节流拉取 GitHub 配置 —— 不全界面重装 APK，
+                // 打开任意界面即同步最新风格与功能。
+                try {
+                    if (a is MainActivity) a.refreshDynamicBar() else RemoteSkin.injectDynamicBar(a)
+                } catch (t: Throwable) { }
+                try { RemoteSkin.refreshIfStale(a) } catch (t: Throwable) { }
             }
             override fun onActivityPaused(a: Activity) {
                 if (current === a) current = null
