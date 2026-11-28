@@ -34,14 +34,9 @@ object LockScreenClock {
     /** 锁屏通知总开关（默认开启：装好就能在锁屏上看到展开过的倒计时）。 */
     private const val KEY_ON = "lockscreen_notify"
 
-    // 换渠道号（v65 → v67）：渠道重要性是一次性的，只有换新 ID 重建渠道才能让
-    // 「锁屏必显」权重重新生效——国产 ROM / 用户一旦把旧渠道调成静默 / 关闭，
-    // 光靠旧 ID 是改不回来的，必须换 ID 重建。配合 ensureChannel 的「被降级即重建」自愈。
-    private const val CHANNEL_ID = "countdown_lockscreen_v67"
-    /** 历史渠道号：升级时主动删掉，避免旧渠道继续占着「静默 / 关闭」的锁屏隐藏设置。 */
-    private val LEGACY_CHANNEL_IDS = arrayOf(
-        "countdown_lockscreen", "countdown_lockscreen_v64", "countdown_lockscreen_v65"
-    )
+    // 换渠道号（v64 → v65）：渠道重要性是一次性的，只有重建渠道才能让新的
+    // 「锁屏必显」权重重新生效（旧渠道已经被系统记成静默通知了）。
+    private const val CHANNEL_ID = "countdown_lockscreen_v65"
     private const val CHANNEL_NAME = "锁屏倒计时"
     private const val CHANNEL_DESC = "把悬浮窗里的倒计时以常驻通知显示在通知栏与锁屏上"
     /** 通知 id 基数：与其它通知（归零提醒 / 更新 / 吃药）错开，别互相顶掉。 */
@@ -91,28 +86,6 @@ object LockScreenClock {
     /** 当前发出去的锁屏通知有几条（给「关于」页显示实时状态用）。 */
     @Synchronized
     fun activeCount(): Int = posted.size
-
-    /**
-     * 提前把「锁屏必显」渠道准备好 / 自愈。
-     * 服务启动、进入关于页、开机时都调一次：哪怕当前一条可见倒计时都没有，
-     * 被降级的渠道也能在用户下次展开倒计时之前就修好。
-     */
-    fun ensureReady(ctx: Context) {
-        try { ensureChannel(ctx) } catch (_: Throwable) {}
-    }
-
-    /**
-     * 锁屏渠道是否处于「锁屏必显」状态（高重要性 + 锁屏公开）。
-     * 给通知体检用：被降级时明确告知用户是哪一项挡住了锁屏倒计时。
-     */
-    fun channelHealthy(ctx: Context): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return true
-        val ch = try { nm(ctx).getNotificationChannel(CHANNEL_ID) } catch (_: Throwable) { null }
-            // 渠道还没建过：发通知时会自动建成「锁屏必显」，不算异常
-            ?: return true
-        return ch.importance >= NotificationManager.IMPORTANCE_HIGH &&
-                ch.lockscreenVisibility == Notification.VISIBILITY_PUBLIC
-    }
 
     /**
      * 立刻发一条「锁屏通知」给用户在锁屏上验货：
@@ -226,29 +199,13 @@ object LockScreenClock {
     private fun ensureChannel(ctx: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val nm = nm(ctx)
-        // 清掉历史渠道：它们多半被系统 / 用户记成了静默或关闭，留着只会继续在锁屏上隐藏倒计时。
-        for (old in LEGACY_CHANNEL_IDS) {
-            try { nm.deleteNotificationChannel(old) } catch (_: Throwable) {}
-        }
-        val cur = try { nm.getNotificationChannel(CHANNEL_ID) } catch (_: Throwable) { null }
-        // 关键自愈：渠道一旦存在就再也不检查，是「锁屏突然收不到」的头号根因——
-        // 用户或国产 ROM 把重要性调成「静默 / 关闭」后，锁屏就再也不显示，而旧代码直接 return。
-        // 这里每次都校验，发现被降级就删掉重建为「锁屏必显」的高重要性渠道。
-        if (cur != null && cur.importance >= NotificationManager.IMPORTANCE_HIGH &&
-            cur.lockscreenVisibility == Notification.VISIBILITY_PUBLIC) return
-        if (cur != null) {
-            try { nm.deleteNotificationChannel(CHANNEL_ID) } catch (_: Throwable) {}
-        }
+        if (nm.getNotificationChannel(CHANNEL_ID) != null) return
         val ch = NotificationChannel(
             CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_HIGH
         )
         ch.description = CHANNEL_DESC
         ch.setShowBadge(false)
         ch.lockscreenVisibility = Notification.VISIBILITY_PUBLIC
-        // 高重要性渠道首次提醒会响一声：这里不设声音 / 震动，配合通知的 OnlyAlertOnce，
-        // 保证「锁屏必显」的同时不会每秒叮当响。
-        ch.setSound(null, null)
-        ch.enableVibration(false)
         nm.createNotificationChannel(ch)
     }
 
