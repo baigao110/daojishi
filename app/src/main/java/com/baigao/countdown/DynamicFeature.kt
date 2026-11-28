@@ -57,8 +57,24 @@ object DynamicFeature {
         Thread {
             var n = 0
             try {
-                for (m in RemoteSkin.modules()) {
-                    if (!m.enabled) continue
+                val configured = RemoteSkin.modules().filter { it.enabled }
+                val wanted = configured.map { it.name }.toSet()
+                // v207：删除同步 —— GitHub 配置里已移除 / 已禁用的模块，从内存与本地 dex 缓存一起清掉，
+                // 否则「删除功能」后按钮仍会因内存残留继续显示，重进界面也消不掉。
+                synchronized(modules) {
+                    val stale = modules.keys.filter { it !in wanted }
+                    for (name in stale) modules.remove(name)
+                }
+                val dir = File(ctx.applicationContext.filesDir, "dyn_modules")
+                if (dir.exists()) {
+                    for (f in dir.listFiles() ?: emptyArray()) {
+                        val name = f.name.removeSuffix(".dex")
+                        if (name !in wanted && f.isFile) {
+                            try { f.delete() } catch (_: Throwable) { }
+                        }
+                    }
+                }
+                for (m in configured) {
                     val inst = loadModule(ctx, m)
                     if (inst != null) {
                         synchronized(modules) { modules[m.name] = inst }
@@ -73,8 +89,8 @@ object DynamicFeature {
                 main.post {
                     // v1.0.0.66 试跑修复：dex 是异步加载的，加载完必须主动刷新界面，
                     // 否则主界面 onCreate 时模块还没就位、动态栏按钮永远出不来。
-                    // applyToCurrent 内部会重建动态栏（refreshDynamicBar），并顺带重新换肤。
-                    if (count > 0) CountdownApp.applyToCurrent()
+                    // v207：无论 count 是否 >0 都刷新 —— 删除模块后 count=0 也要把残留按钮清掉。
+                    CountdownApp.applyToCurrent()
                     callback?.invoke(count)
                 }
             }
