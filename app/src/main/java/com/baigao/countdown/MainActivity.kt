@@ -853,6 +853,9 @@ class MainActivity : Activity() {
      *               这样新加的可见倒计时在保存返回这一瞬间就出窗，改过的条目当场刷新。
      */
     private fun syncService(force: Boolean = false) {
+        // 每次同步都顺手校准一次「锁屏必显」渠道：被用户/ROM 调成静默后能自愈重建，
+        // 这是「锁屏收不到倒计时通知」最常见的根因。
+        LockScreenClock.ensureReady(this)
         val hasVisible = data.any { it.isVisible }
         val lockOn = LockScreenClock.isOn(this)
         if (!hasVisible && !lockOn) {
