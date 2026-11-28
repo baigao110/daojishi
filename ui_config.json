@@ -1,0 +1,35 @@
+{
+  "enabled": false,
+  "_readme": "界面/功能远程配置。改完推到 GitHub 仓库根目录，App 打开即自动同步生效，不用重装 APK。enabled=true 才会应用下面所有改动；改回 false 立即恢复原样。App 内『关于 → 界面/功能配置』可直接编辑并复制配置。",
+  "updatedAt": "2026-11-28",
+  "theme": {
+    "accent": "#FF00D8FF",
+    "accentDeep": "#FF00C2D9",
+    "bgTop": "#FF0B1020",
+    "bgCenter": "#FF141A33",
+    "bgBottom": "#FF080B14",
+    "text": "#FFEAF6FF"
+  },
+  "versionName": "",
+  "texts": {
+    "app_name": "倒计时"
+  },
+  "features": {
+    "menuMedicine": true,
+    "menuRestore": true,
+    "changelogButton": true
+  },
+  "actions": [
+    {
+      "label": "项目主页",
+      "type": "url",
+      "value": "https://github.com/baigao110/daojishi"
+    },
+    {
+      "label": "打个招呼",
+      "type": "toast",
+      "value": "你好呀 👋"
+    }
+  ],
+  "modules": []
+}
