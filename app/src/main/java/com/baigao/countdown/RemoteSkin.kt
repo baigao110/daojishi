@@ -10,6 +10,10 @@ import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import android.widget.Button
+import android.widget.LinearLayout
+import android.widget.ScrollView
+import android.widget.Toast
 import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -56,6 +60,12 @@ object RemoteSkin {
         val enabled: Boolean = true
     )
 
+    /** v207：按 view id/tag 精确设置单个控件样式。 */
+    data class ViewStyle(
+        val textColor: String? = null,
+        val background: String? = null
+    )
+
     data class State(
         val enabled: Boolean = false,
         val theme: Theme = Theme(),
@@ -64,7 +74,9 @@ object RemoteSkin {
         val features: Map<String, Boolean> = emptyMap(),
         val actions: List<Action> = emptyList(),
         val modules: List<Module> = emptyList(),
-        val updatedAt: String? = null
+        val updatedAt: String? = null,
+        val visibility: Map<String, Boolean> = emptyMap(),   // v207：view id/tag -> true显示/false隐藏（功能删除即隐藏）
+        val viewStyles: Map<String, ViewStyle> = emptyMap()  // v207：view id/tag -> 精确颜色
     )
 
     /** 内置默认强调色（与历史玻璃主题一致）。 */
@@ -82,6 +94,8 @@ object RemoteSkin {
 
     private val main = Handler(Looper.getMainLooper())
     private val fetching = AtomicBoolean(false)
+    /** v207：记住 TextView 的原始文字，避免按原文匹配时「替换一次后就失忆」。 */
+    private val originalTexts = java.util.WeakHashMap<TextView, String>()
 
     /** 当前生效的完整配置 JSON（local 优先，否则 remote）。 */
     @Volatile
@@ -242,6 +256,26 @@ object RemoteSkin {
                     modules.add(Module(name, dex, cls, m.optBoolean("enabled", true)))
             }
         }
+        val visibility = HashMap<String, Boolean>()
+        o.optJSONObject("visibility")?.let { jo ->
+            val it = jo.keys()
+            while (it.hasNext()) {
+                val k = it.next()
+                visibility[k] = jo.optBoolean(k)
+            }
+        }
+        val viewStyles = HashMap<String, ViewStyle>()
+        o.optJSONObject("viewStyles")?.let { jo ->
+            val it = jo.keys()
+            while (it.hasNext()) {
+                val k = it.next()
+                val s = jo.optJSONObject(k) ?: continue
+                viewStyles[k] = ViewStyle(
+                    textColor = s.optString("textColor").takeIf { it.isNotBlank() && it.startsWith("#") },
+                    background = s.optString("background").takeIf { it.isNotBlank() && it.startsWith("#") }
+                )
+            }
+        }
         return State(
             enabled = enabled,
             theme = theme,
@@ -250,7 +284,9 @@ object RemoteSkin {
             features = features,
             actions = actions,
             modules = modules,
-            updatedAt = o.optString("updatedAt").takeIf { it.isNotBlank() }
+            updatedAt = o.optString("updatedAt").takeIf { it.isNotBlank() },
+            visibility = visibility,
+            viewStyles = viewStyles
         )
     }
 
@@ -282,6 +318,27 @@ object RemoteSkin {
 
     fun modules(): List<Module> = if (state.enabled) state.modules else emptyList()
 
+    /** v207：某控件是否显示（配置里没写就返回 null 表示保持原样）。 */
+    fun visibilityOf(key: String): Boolean? =
+        if (state.enabled) state.visibility[key] else null
+
+    /** v207：某控件的精确样式覆盖。 */
+    fun viewStyleOf(key: String): ViewStyle? =
+        if (state.enabled) state.viewStyles[key] else null
+
+    /** 原文匹配：配置 texts 里也可用「控件当前文字」作 key，覆盖没有 id/tag 的标题。 */
+    fun textByOriginal(original: String): String? =
+        if (state.enabled) state.texts[original] else null
+
+    private var lastFetchAt = 0L
+    /** v207：界面 resume 时调用，距上次拉取超过 10 秒才真拉，做到「打开即同步」又不刷屏。 */
+    fun refreshIfStale(ctx: Context) {
+        val now = System.currentTimeMillis()
+        if (now - lastFetchAt < 10_000L) return
+        lastFetchAt = now
+        refresh(ctx, null)
+    }
+
     private fun parseColor(s: String?, fallback: Int): Int = try {
         if (s.isNullOrBlank()) fallback else Color.parseColor(s)
     } catch (t: Throwable) { fallback }
@@ -302,24 +359,48 @@ object RemoteSkin {
         }
     }
 
+    /** 控件的配置 key：优先 tag，其次资源 id 名。 */
+    private fun keyOf(v: View): String? =
+        v.tag as? String ?: runCatching {
+            if (v.id != View.NO_ID) v.resources.getResourceEntryName(v.id) else null
+        }.getOrNull()
+
     private fun applyView(v: View, accent: Int) {
-        if (v is TextView) {
-            // 文案覆盖：用控件的 id 名或 tag 作为 key
-            val key = v.tag as? String ?: runCatching {
-                if (v.id != View.NO_ID) v.resources.getResourceEntryName(v.id) else null
-            }.getOrNull()
-            if (key != null) {
-                state.texts[key]?.let { if (it.isNotBlank()) v.text = it }
+        val key = keyOf(v)
+        // v207：功能显隐 —— 配置里按 id/tag 把某控件设为 false 即「删除」该功能
+        if (key != null) {
+            visibilityOf(key)?.let { show ->
+                v.visibility = if (show) View.VISIBLE else View.GONE
             }
-            // 文字色：只换青色系
-            val c = v.currentTextColor
-            if (isCyanFamily(c)) v.setTextColor(accent)
         }
-        // 背景：只换「主色为青色系」的纯色/渐变 drawable
-        (v.background as? GradientDrawable)?.let { gd ->
-            val c = gd.color?.defaultColor
-            if (c != null && isCyanFamily(c)) {
-                gd.setColor(accent)
+        if (v is TextView) {
+            // 文案覆盖：id/tag 命中优先；否则用当前文字原文匹配（覆盖无 id 的标题）
+            val replaced = state.texts[key]?.let { if (it.isNotBlank()) { v.text = it; true } else false } ?: false
+            if (!replaced) {
+                val original = originalTexts.getOrPut(v) { v.text?.toString().orEmpty() }
+                if (original.isNotBlank()) textByOriginal(original)?.let {
+                    if (it.isNotBlank()) v.text = it
+                }
+            }
+            // v207：按控件精确设文字色（优先）> 青色系跟随主题
+            val style = key?.let { viewStyleOf(it) }
+            val exact = style?.textColor?.let { parseColor(it, 0) }
+            if (exact != null) {
+                v.setTextColor(exact)
+            } else {
+                val c = v.currentTextColor
+                if (isCyanFamily(c)) v.setTextColor(accent)
+            }
+        }
+        // 背景：v207 按控件精确设色（优先）> 青色系跟随主题
+        val style = key?.let { viewStyleOf(it) }
+        val exactBg = style?.background?.let { parseColor(it, 0) }
+        if (exactBg != null && v !is GlassBackdrop) {
+            v.setBackgroundColor(exactBg)
+        } else {
+            (v.background as? GradientDrawable)?.let { gd ->
+                val c = gd.color?.defaultColor
+                if (c != null && isCyanFamily(c)) gd.setColor(accent)
             }
         }
         if (v is GlassBackdrop) v.applyTheme(accent)
@@ -332,5 +413,80 @@ object RemoteSkin {
     private fun isCyanFamily(c: Int): Boolean {
         val r = Color.red(c); val g = Color.green(c); val b = Color.blue(c)
         return r < 130 && g > 150 && b > 150
+    }
+
+    // ---------------- v207：所有界面通用的动态功能栏 ----------------
+    /**
+     * 把远程 actions + 已加载 dex 模块渲染成一行按钮，注入到任意 Activity 的滚动区上方。
+     * 先清旧栏再建新栏 —— 所以 GitHub 上删掉一个 action/module 后，界面重进即不再出现。
+     * 没有 ScrollView 的界面（如编辑器 / 更新页）自动跳过，不干扰它们。
+     */
+    fun injectDynamicBar(activity: Activity) {
+        val decor = activity.window?.decorView ?: return
+        decor.post {
+            if (activity.isFinishing) return@post
+            clearBars(decor)
+            if (!state.enabled) return@post
+            val acts = actions()
+            val mods = DynamicFeature.loadedModules()
+            if (acts.isEmpty() && mods.isEmpty()) return@post
+            val content = activity.findViewById<View>(android.R.id.content) as? ViewGroup ?: return@post
+            val hostInfo = findHost(content) ?: return@post
+            val host = hostInfo.first
+            val anchor = hostInfo.second
+            val density = activity.resources.displayMetrics.density
+            fun dp(v: Int) = (v * density).toInt()
+            val bar = LinearLayout(activity).apply {
+                tag = "dynbar"
+                orientation = LinearLayout.HORIZONTAL
+                setPadding(0, 0, 0, dp(6))
+            }
+            fun addChip(label: String, click: () -> Unit) {
+                val cb = Button(activity).apply {
+                    text = label
+                    textSize = 12f
+                    isAllCaps = false
+                    setTextColor(0xFF001018.toInt())
+                    setBackgroundResource(R.drawable.fab_accent)
+                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                        setMargins(0, 0, dp(4), 0)
+                    }
+                }
+                cb.setOnClickListener { click() }
+                bar.addView(cb)
+            }
+            for (a in acts) addChip(a.label) { DynamicFeature.runAction(activity, a) }
+            for ((name, m) in mods) addChip(m.label) {
+                val t = DynamicFeature.invokeModule(activity, name)
+                if (t.isNotBlank()) Toast.makeText(activity, t, Toast.LENGTH_LONG).show()
+            }
+            val idx = if (host.indexOfChild(anchor) >= 0) host.indexOfChild(anchor) else 0
+            host.addView(bar, idx.coerceAtMost(host.childCount))
+        }
+    }
+
+    private fun clearBars(v: View) {
+        if (v is ViewGroup) {
+            for (i in v.childCount - 1 downTo 0) {
+                val ch = v.getChildAt(i)
+                if (ch.tag as? String == "dynbar") v.removeViewAt(i) else clearBars(ch)
+            }
+        }
+    }
+
+    /** 找到第一个 ScrollView 的父容器作为动态栏宿主，返回 (父容器, ScrollView 锚点)。 */
+    private fun findHost(root: ViewGroup): Pair<ViewGroup, View>? {
+        for (i in 0 until root.childCount) {
+            val ch = root.getChildAt(i)
+            if (ch is ScrollView && ch.parent is ViewGroup) return Pair(ch.parent as ViewGroup, ch)
+        }
+        for (i in 0 until root.childCount) {
+            val ch = root.getChildAt(i)
+            if (ch is ViewGroup) {
+                val r = findHost(ch)
+                if (r != null) return r
+            }
+        }
+        return null
     }
 }
