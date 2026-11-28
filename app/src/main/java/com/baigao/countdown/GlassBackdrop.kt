@@ -28,30 +28,16 @@ class GlassBackdrop @JvmOverloads constructor(
 ) : View(context, attrs, defStyleAttr) {
 
     /** 一团光斑：相对坐标（0~1）+ 相对半径 + 颜色。 */
-    private data class Blob(val x: Float, val y: Float, val r: Float, val color: Int)
+    private class Blob(val x: Float, val y: Float, val r: Float, val color: Int)
 
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
 
-    /** v1.0.0.66：默认光斑色；远程换肤时按主题强调色重算前三团。 */
-    private var blobs = defaultBlobs()
-
-    private fun defaultBlobs() = listOf(
+    private val blobs = listOf(
         Blob(0.18f, 0.14f, 0.52f, Color.parseColor("#CC00D8FF")), // 左上：青
         Blob(0.86f, 0.24f, 0.46f, Color.parseColor("#B37A5CFF")), // 右上：紫
         Blob(0.30f, 0.72f, 0.58f, Color.parseColor("#993367FF")), // 左下：蓝
         Blob(0.92f, 0.86f, 0.42f, Color.parseColor("#8000FFC8"))  // 右下：青绿
     )
-
-    /** 远程主题色：把左上青 / 右下青绿两团换成强调色，其余保持玻璃质感。 */
-    fun applyTheme(accent: Int) {
-        val a = Color.argb(0xCC, Color.red(accent), Color.green(accent), Color.blue(accent))
-        val aDeep = Color.argb(0x80, Color.red(accent), Color.green(accent), Color.blue(accent))
-        val base = defaultBlobs().toMutableList()
-        base[0] = base[0].copy(color = a)
-        base[3] = base[3].copy(color = aDeep)
-        blobs = base
-        invalidate()
-    }
 
     init {
         // 光斑整体压暗一点，避免颜色过艳抢掉前景文字
