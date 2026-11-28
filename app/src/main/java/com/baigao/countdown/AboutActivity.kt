@@ -361,6 +361,7 @@ class AboutActivity : Activity() {
             UpdateNotifier.openSettings(this)
         }
         refreshState()
+        refreshDiagnosticButtons()
         refreshUpdateMode()
     }
 
@@ -436,6 +437,23 @@ class AboutActivity : Activity() {
         } else ""
         checkStateTv.text = listOf(UpdateCheckState.summary(this), perm, battery)
             .filter { it.isNotEmpty() }.joinToString("\n")
+    }
+
+    /**
+     * 按当前状态收起两个「排障」按钮，没事别打扰：
+     * - 「通知小体检」：体检项全部正常时没有可修的，收起入口；
+     * - 「允许后台运行」：已经允许后台（电池优化已关）时不必再引导。
+     * 从系统设置返回后 onResume 会重新判定，按钮自动出现 / 消失。
+     */
+    private fun refreshDiagnosticButtons() {
+        if (!::batteryBtn.isInitialized || !::notifyCheckBtn.isInitialized) return
+        val batteryOk = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val pm = getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
+            pm.isIgnoringBatteryOptimizations(packageName)
+        } else true
+        batteryBtn.visibility = if (batteryOk) View.GONE else View.VISIBLE
+        val allOk = try { NotifyGuard.allOk(this) } catch (_: Throwable) { false }
+        notifyCheckBtn.visibility = if (allOk) View.GONE else View.VISIBLE
     }
 
     /** 按偏好回填屏幕常亮 / 锁屏通知开关（程序化设置时抑制回调）。 */
@@ -601,6 +619,7 @@ class AboutActivity : Activity() {
             Toast.makeText(this, "已经是最新版本啦", Toast.LENGTH_SHORT).show()
         }
         refreshState()
+        refreshDiagnosticButtons()
         refreshUpdateMode()
         refreshKeepSwitches()
         refreshTimeFormat()
