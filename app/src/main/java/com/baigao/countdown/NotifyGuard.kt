@@ -90,6 +90,20 @@ object NotifyGuard {
         //     被降为「无声」或「关闭」后，通知会被静默丢弃 —— 这是国产 ROM 上最常见的一击。
         n++; out.add(channelItem(ctx, nm, n, MedicineReminder.CHANNEL_ID, "吃药提醒渠道", hard = true))
         n++; out.add(channelItem(ctx, nm, n, UpdateNotifier.CHANNEL_ID, "版本更新渠道", hard = true))
+        // 锁屏倒计时渠道：重要性被调低 / 关闭时，倒计时通知不会显示在锁屏上。
+        // 发通知时会自动自愈重建，这里作为体检项把「当前是否已修好」如实报出来。
+        n++
+        val lockHealthy = LockScreenClock.channelHealthy(ctx)
+        out.add(
+            Item(
+                lockHealthy, n, "锁屏倒计时渠道",
+                if (lockHealthy) "正常（高优先级、锁屏可见）"
+                else "被调成静默 / 关闭了 —— 锁屏上看不到倒计时，打开 App 会自动修复；没恢复就点下面按钮",
+                hard = false,
+                fixLabel = if (lockHealthy) null else "去打开看看",
+                fix = if (lockHealthy) null else ({ LockScreenClock.ensureReady(ctx); openNotificationSettings(ctx) })
+            )
+        )
 
         // 精确闹钟：拿不到也不致命（有系统闹钟 + 重复闹钟 + 巡检兜底），但到点会偏
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
