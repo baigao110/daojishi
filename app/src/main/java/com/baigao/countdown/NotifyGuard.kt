@@ -170,6 +170,27 @@ object NotifyGuard {
     /** 是否全部通过。 */
     fun allOk(ctx: Context): Boolean = items(ctx).all { it.ok }
 
+    /**
+     * 体检判定的三态结果。
+     * @param allOk 是否每一项都正常。
+     * @param error 判定过程是否出过错（例如某个系统 API 抛异常）——
+     *              为 true 时调用方绝不能隐藏体检按钮，且应显示一个不依赖体检的兜底入口。
+     */
+    class CheckResult(val allOk: Boolean, val error: Boolean)
+
+    /**
+     * 安全判定：把整份体检包的生成过程用 try/catch 兜住。
+     * 一旦判定出错，一律按「不正常」返回（conservative：宁可多显示，不可误藏），
+     * 并置 error=true 让调用方显示兜底按钮。
+     */
+    fun checkSafe(ctx: Context): CheckResult = try {
+        val list = items(ctx)
+        CheckResult(list.all { it.ok }, false)
+    } catch (e: Throwable) {
+        android.util.Log.w("NotifyGuard", "checkSafe: ${e.message}")
+        CheckResult(false, true)
+    }
+
     private fun channelItem(
         ctx: Context, nm: NotificationManager, no: Int, id: String, title: String,
         hard: Boolean = false
