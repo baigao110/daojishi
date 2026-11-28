@@ -68,6 +68,7 @@ object RemoteSkin {
 
     data class State(
         val enabled: Boolean = false,
+        val featuresEnabled: Boolean = true,  // v212：功能层独立于风格开关，默认生效（GitHub 加/删功能即时可见）
         val theme: Theme = Theme(),
         val texts: Map<String, String> = emptyMap(),
         val versionName: String? = null,
@@ -309,6 +310,8 @@ object RemoteSkin {
 
     private fun parse(o: JSONObject): State {
         val enabled = o.optBoolean("enabled", false)
+        // v212：功能层独立开关，默认 true —— 即使风格换肤没开，GitHub 上加/删的功能也生效
+        val featuresEnabled = o.optBoolean("featuresEnabled", true)
         val th = o.optJSONObject("theme")
         val theme = Theme(
             accent = th?.optString("accent")?.takeIf { it.isNotBlank() && it.startsWith("#") },
@@ -377,6 +380,7 @@ object RemoteSkin {
         }
         return State(
             enabled = enabled,
+            featuresEnabled = featuresEnabled,
             theme = theme,
             texts = texts,
             versionName = o.optString("versionName").takeIf { it.isNotBlank() },
@@ -418,16 +422,22 @@ object RemoteSkin {
     /** v211：当前清单修订号（0 表示还没拉到清单）。 */
     fun syncRevision(): Long = state.syncRevision
 
+    /**
+     * v212：功能层访问器改用 [featuresEnabled]，不再被风格开关 [enabled] 挡住 —— 否则默认
+     * enabled=false 会把 GitHub 上加的所有功能全部藏掉，「加/删功能即同步」永远看不到效果。
+     */
+    fun featureEnabled(): Boolean = state.featuresEnabled
+
     fun feature(key: String, default: Boolean): Boolean =
-        if (!state.enabled) default else state.features[key] ?: default
+        if (!state.featuresEnabled) default else state.features[key] ?: default
 
-    fun actions(): List<Action> = if (state.enabled) state.actions else emptyList()
+    fun actions(): List<Action> = if (state.featuresEnabled) state.actions else emptyList()
 
-    fun modules(): List<Module> = if (state.enabled) state.modules else emptyList()
+    fun modules(): List<Module> = if (state.featuresEnabled) state.modules else emptyList()
 
     /** v207：某控件是否显示（配置里没写就返回 null 表示保持原样）。 */
     fun visibilityOf(key: String): Boolean? =
-        if (state.enabled) state.visibility[key] else null
+        if (state.featuresEnabled) state.visibility[key] else null
 
     /** v207：某控件的精确样式覆盖。 */
     fun viewStyleOf(key: String): ViewStyle? =
@@ -533,7 +543,8 @@ object RemoteSkin {
         decor.post {
             if (activity.isFinishing) return@post
             clearBars(decor)
-            if (!state.enabled) return@post
+            // v212：动态功能栏只看功能开关，不再被风格开关 enabled 挡住
+            if (!state.featuresEnabled) return@post
             val acts = actions()
             val mods = DynamicFeature.loadedModules()
             if (acts.isEmpty() && mods.isEmpty()) return@post
