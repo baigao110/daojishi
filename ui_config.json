@@ -1,7 +1,7 @@
 {
   "enabled": false,
-  "_readme": "全界面远程配置（v207）。改完推到 GitHub 仓库根目录，App 打开任意界面即自动同步生效，不用重装 APK。enabled=true 才应用下面所有改动；改回 false 立即恢复原样。App 内『关于 → 界面 / 功能配置』可直接编辑并复制配置。texts 按控件 id/tag 或原文匹配改文案；visibility 按 id/tag 设 true显示/false隐藏（隐藏=删除该功能）；viewStyles 按 id/tag 精确设 textColor/background；actions 加动态功能按钮；modules 加载远程 dex 新功能代码。",
-  "updatedAt": "2026-11-28-v207",
+  "_readme": "全界面远程配置（v211 清单驱动同步）。改完推到 GitHub，App 打开任意界面即自动同步生效，不用重装 APK。同步入口是仓库根的 sync_manifest.json：它登记 versionName（版本号）与 revision（修订号，任意改动后 +1），还有 fragments（额外配置片段文件列表，加/删文件=加/删功能）。本文件是主配置：enabled=true 才应用下面所有改动，改回 false 立即恢复原样。theme 改整体配色；texts 按控件 id/tag 或原文匹配改文案（原文匹配用「界面上当前显示的文字」作 key）；visibility 按 id/tag 设 true显示/false隐藏（隐藏=删除该功能）；viewStyles 按 id/tag 精确设 textColor/background；features 按功能 key 开关；actions 加动态功能按钮（url/toast/dialog/intent/module）；modules 加载远程 dex 新增功能代码（从 actions 里删掉一项即删除该按钮功能）。App 内『关于 → 界面 / 功能配置』可直接编辑、复制、导入配置。",
+  "updatedAt": "2026-11-28-v211",
   "theme": {
     "accent": "#FF00D8FF",
     "accentDeep": "#FF00C2D9",
