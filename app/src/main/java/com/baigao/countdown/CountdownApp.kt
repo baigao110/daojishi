@@ -26,6 +26,10 @@ class CountdownApp : Application() {
             val a = current ?: return
             main.post {
                 try { RemoteSkin.apply(a) } catch (_: Throwable) { }
+                // v211：版本号走同步清单，拉取成功后立即刷新关于页显示
+                if (a is AboutActivity) {
+                    try { a.refreshVersionText() } catch (_: Throwable) { }
+                }
                 // v207：对所有界面重建动态栏（Main 仍走自己的 refresh，其它界面走通用注入；
                 // 两者都先清 tag=dynbar 旧栏，不会重复叠加）。
                 try {
