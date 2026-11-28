@@ -775,6 +775,8 @@ class MainActivity : Activity() {
         UpdateManager.consumePendingInstall(this)
         // 已经进到 App 了，清掉通知栏上的更新提醒
         UpdateNotifier.cancel(this)
+        // v1.0.0.66 试跑修复：dex 模块异步加载，切回前台时补一次动态栏刷新兜底
+        try { refreshDynamicBar() } catch (_: Throwable) { }
         loadData()
         rebuildList()
         try {
