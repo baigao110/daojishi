@@ -139,6 +139,17 @@
         </LinearLayout>
 
         <Button
+            android:id="@+id/configBtn"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="10dp"
+            android:text="界面 / 功能配置（远程同步）"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="#001018"
+            android:background="@drawable/circle_btn" />
+
+        <Button
             android:id="@+id/disclaimerBtn"
             android:layout_width="260dp"
             android:layout_height="46dp"
